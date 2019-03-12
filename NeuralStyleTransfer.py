@@ -48,7 +48,7 @@ def gram_matrix(input):
     a, b, c, d = input.size()  
     # a=batch size
     # b=number of feature maps
-    # c,d=dimensions of a f
+    # c,d=dimensions of a feature map
     features = input.view(a * b, c * d)
     G = torch.mm(features, features.t())  
     return G.div(a * b * c * d)
