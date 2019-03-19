@@ -87,3 +87,31 @@ cnn = models.vgg19(pretrained=True).features.to(device).eval()
 cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
 cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
 # normalizing the images before sending them to the network
+
+# create a module to normalize input image so we can easily put it in a
+# nn.Sequential
+class Normalization(nn.Module):
+    def __init__(self, mean, std):
+        super(Normalization, self).__init__()
+        # .view the mean and std to make them [C x 1 x 1] so that they can
+        # directly work with image Tensor of shape [B x C x H x W].
+        # B is batch size. C is number of channels. H is height and W is width.
+        self.mean = torch.tensor(mean).view(-1, 1, 1)
+        self.std = torch.tensor(std).view(-1, 1, 1)
+
+    def forward(self, img):
+        # normalize img
+        return (img - self.mean) / self.std
+    
+# desired depth layers to compute style and content losses
+content_layers = ['conv_4']
+style_layers = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
+# the layers can be changed but we will use these layers as
+# they have been proven to give great results for the topic
+
+def get_style_and_losses(style_img, content_img):
+    
+    normalization = Normalization(cnn_normalization_mean, cnn_normalization_std).to(device)
+    content_losses = []
+    style_losses = []
+    model = nn.Sequential(normalization)
