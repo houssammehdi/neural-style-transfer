@@ -67,3 +67,23 @@ def gram_matrix(input):
     return G.div(a * b * c * d)
     # normalizing by dividing by the number of elements in each f. map
     # crucial step because larger values have larger impact during gradient descent
+    
+class StyleLoss(nn.Module):
+
+    def __init__(self, target_feature):
+        super(StyleLoss, self).__init__()
+        self.target = gram_matrix(target_feature).detach()
+        # same as the Content Loss, but we used the gram matrix
+
+    def forward(self, input):
+        G = gram_matrix(input)
+        self.loss = F.mse_loss(G, self.target)
+        # mean square error between GXL and GSL ||GXL-GSL||^2
+        return input
+    
+    
+cnn = models.vgg19(pretrained=True).features.to(device).eval()
+# importing pre-trained model, evaluation mode
+cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
+cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
+# normalizing the images before sending them to the network
