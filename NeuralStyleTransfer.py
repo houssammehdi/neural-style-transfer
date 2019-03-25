@@ -150,20 +150,27 @@ def get_style_and_losses(style_img, content_img):
             # add content loss:
             target = model(content_img).detach()
             content_loss = ContentLoss(target)
+            # Getting the content loss from the module
             model.add_module("content_loss_{}".format(i), content_loss)
+            # Adding the module to the model
             content_losses.append(content_loss)
+            # Adding the content loss to the Content_losses List 
 
         if name in style_layers:
             # add style loss:
             target_feature = model(style_img).detach()
             style_loss = StyleLoss(target_feature)
+            # Getting the style loss from the module
             model.add_module("style_loss_{}".format(i), style_loss)
-            style_losses.append(style_loss)
+            # Adding the module to the model
+            style_losses.append(style_loss) 
+            # Adding the style loss to the Style_losses List
 
     # Removing the layers after the last content and style losses
     for i in range(len(model) - 1, -1, -1):
         if isinstance(model[i], ContentLoss) or isinstance(model[i], StyleLoss):
-            break
+            # If the layer is an instance of ContentLoss or StyleLoss
+            break # Stop the loop ( stop incrementing i )
 
     model = model[:(i + 1)] # Everything until i + 1 -> 0 to i
 
