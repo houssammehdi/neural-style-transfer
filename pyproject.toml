@@ -1,0 +1,34 @@
+[project]
+name = "neural-style"
+version = "1.0.0"
+description = "Neural style transfer with PyTorch and VGG-19"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Houssam Mehdi" }]
+dependencies = ["torch>=2.1", "torchvision>=0.16", "pillow>=10"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+neural-style = "neural_style.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["neural_style"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["N812"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
