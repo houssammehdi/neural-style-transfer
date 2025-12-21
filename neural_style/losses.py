@@ -8,17 +8,17 @@ from torch import nn
 
 
 def gram_matrix(features: torch.Tensor) -> torch.Tensor:
-    """Return the normalised Gram matrix of a ``(B, C, H, W)`` feature map.
+    """Return the normalised Gram matrices of a ``(B, C, H, W)`` feature map as ``(B, C, C)``.
 
-    Each entry ``G[i, j]`` is the inner product between the vectorised feature
-    maps ``i`` and ``j``. It captures which features co-occur, independent of
-    *where* they occur, which is why it works as a representation of style.
-    The result is divided by the number of elements so that layers with large
-    feature maps do not dominate the style loss.
+    Each entry ``G[b, i, j]`` is the inner product between the vectorised feature
+    maps ``i`` and ``j`` of sample ``b``. It captures which features co-occur,
+    independent of *where* they occur, which is why it works as a representation
+    of style. The result is divided by the number of elements per sample so that
+    layers with large feature maps do not dominate the style loss.
     """
     b, c, h, w = features.shape
-    flat = features.reshape(b * c, h * w)
-    return flat @ flat.t() / (b * c * h * w)
+    flat = features.reshape(b, c, h * w)
+    return flat @ flat.transpose(1, 2) / (c * h * w)
 
 
 class ContentLoss(nn.Module):

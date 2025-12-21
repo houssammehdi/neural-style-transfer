@@ -27,13 +27,21 @@ def test_gram_matrix_matches_definition() -> None:
     x = torch.randn(1, 3, 4, 5)
     flat = x.reshape(3, 20)
     expected = flat @ flat.T / (3 * 4 * 5)
-    torch.testing.assert_close(gram_matrix(x), expected)
+    torch.testing.assert_close(gram_matrix(x)[0], expected)
+
+
+def test_gram_matrix_is_computed_per_sample() -> None:
+    # Regression: reshaping (B, C, H, W) to (B*C, H*W) mixed the samples of a batch.
+    x = torch.randn(2, 3, 4, 5)
+    g = gram_matrix(x)
+    assert g.shape == (2, 3, 3)
+    torch.testing.assert_close(g[1], gram_matrix(x[1:])[0])
 
 
 def test_gram_matrix_is_symmetric_and_translation_invariant() -> None:
     x = torch.randn(1, 8, 6, 6)
     g = gram_matrix(x)
-    torch.testing.assert_close(g, g.T)
+    torch.testing.assert_close(g, g.transpose(1, 2))
     # rolling pixels changes *where* features are, not which co-occur
     torch.testing.assert_close(gram_matrix(torch.roll(x, shifts=2, dims=-1)), g)
 
