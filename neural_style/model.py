@@ -97,8 +97,10 @@ def build_style_model(
             model.add_module(f"style_loss_{conv_idx}", probe)
             style_losses.append(probe)
 
-    last = max(i for i, m in enumerate(model) if isinstance(m, (ContentLoss, StyleLoss)))
     unknown = (set(content_layers) | set(style_layers)) - {n for n, _ in model.named_children()}
     if unknown:
         raise ValueError(f"layers not found in network: {sorted(unknown)}")
+    if not content_losses and not style_losses:
+        raise ValueError("at least one content or style layer is required")
+    last = max(i for i, m in enumerate(model) if isinstance(m, (ContentLoss, StyleLoss)))
     return StyleModel(model[: last + 1], content_losses, style_losses)

@@ -67,6 +67,11 @@ def test_unknown_layer_is_rejected(cnn: torch.nn.Sequential) -> None:
     img = torch.rand(1, 3, 32, 32)
     with pytest.raises(ValueError, match="conv_99"):
         build_style_model(cnn, img, [img], style_layers=("conv_1", "conv_99"))
+    # Regression: when no requested layer existed, the error was "max() arg is an empty sequence".
+    with pytest.raises(ValueError, match="conv_98"):
+        build_style_model(cnn, img, [img], content_layers=("conv_98",), style_layers=("conv_99",))
+    with pytest.raises(ValueError, match="at least one"):
+        build_style_model(cnn, img, [img], content_layers=(), style_layers=())
 
 
 @pytest.mark.parametrize("optimizer", ["lbfgs", "adam"])
