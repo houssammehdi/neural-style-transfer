@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import torch
-from PIL import Image
+from PIL import Image, ImageOps
 from torch import nn
 from torchvision.transforms import functional as TF
 
@@ -31,9 +31,11 @@ def load_image(path: str | Path, size: int | tuple[int, int], device: torch.devi
 
     An ``int`` size resizes the shorter edge (aspect preserved); a tuple
     forces an exact ``(H, W)``, which is how style images are matched to the
-    content image's shape.
+    content image's shape. EXIF orientation (as written by phone cameras) is
+    applied, so photos load the way image viewers show them.
     """
-    img = Image.open(path).convert("RGB")
+    with Image.open(path) as raw:
+        img = ImageOps.exif_transpose(raw).convert("RGB")
     tensor = TF.to_tensor(TF.resize(img, size, antialias=True))
     return tensor.unsqueeze(0).to(device)
 

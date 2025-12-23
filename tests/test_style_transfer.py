@@ -2,6 +2,7 @@
 
 import pytest
 import torch
+from PIL import Image
 
 from neural_style import (
     StyleLoss,
@@ -106,6 +107,18 @@ def test_image_round_trip(tmp_path) -> None:
     save_image(img, path)
     back = load_image(path, (20, 30), torch.device("cpu"))
     torch.testing.assert_close(back, img, atol=1 / 255, rtol=0)
+
+
+def test_exif_orientation_is_applied(tmp_path) -> None:
+    # Regression: phone photos store their rotation in EXIF and were loaded sideways.
+    img = Image.new("RGB", (40, 20), "black")
+    img.paste((255, 0, 0), (0, 0, 40, 5))  # red stripe along the top of the stored pixels
+    exif = Image.Exif()
+    exif[0x0112] = 6  # "rotate 90 degrees clockwise to display"
+    img.save(tmp_path / "rotated.jpg", exif=exif, quality=95)
+    loaded = load_image(tmp_path / "rotated.jpg", (40, 20), torch.device("cpu"))
+    assert loaded[0, 0, :, -3:].mean() > 0.8  # displayed upright, the stripe is on the right edge
+    assert loaded[0, 0, :, :3].mean() < 0.2
 
 
 def test_cli_parser_defaults() -> None:
