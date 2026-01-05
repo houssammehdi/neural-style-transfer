@@ -9,7 +9,12 @@ authors = [{ name = "Houssam Mehdi" }]
 dependencies = ["torch>=2.1", "torchvision>=0.16", "pillow>=10"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+# Exact pins: formatter, linter and test-runner versions decide what CI accepts.
+dev = [
+    "pytest==9.1.1",
+    "hypothesis==6.168.1",
+    "ruff==0.16.9",
+]
 
 [project.scripts]
 neural-style = "neural_style.cli:main"
