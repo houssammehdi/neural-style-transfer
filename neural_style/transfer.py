@@ -1,156 +1,295 @@
-"""Image I/O and the optimisation loop that performs style transfer."""
+"""The optimisation that performs style transfer.
+
+The synthesised image's pixels are the only parameters; VGG-19 stays frozen.
+The objective is ``alpha * L_content + beta * L_style + gamma * TV``.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass, field
-from pathlib import Path
+import time
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
+from typing import Literal, get_args
 
 import torch
-from PIL import Image, ImageOps
-from torch import nn
-from torchvision.transforms import functional as TF
+import torch.nn.functional as F
 
-from .losses import total_variation
-from .model import DEFAULT_CONTENT_LAYERS, DEFAULT_STYLE_LAYERS, build_style_model
+from .image import resize_to_area
+from .losses import gram_matrix, total_variation
+from .model import VGG19, FeatureExtractor, Pooling
 
-
-def pick_device(preferred: str = "auto") -> torch.device:
-    """Resolve ``auto`` to CUDA, then Apple MPS, then CPU."""
-    if preferred != "auto":
-        return torch.device(preferred)
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
+OptimizerName = Literal["lbfgs", "adam"]
+InitName = Literal["content", "noise"]
 
 
-def load_image(path: str | Path, size: int | tuple[int, int], device: torch.device) -> torch.Tensor:
-    """Load an RGB image as a ``(1, 3, H, W)`` float tensor in ``[0, 1]``.
+@dataclass(frozen=True)
+class Preset:
+    """Default loss layers and weights for one source of VGG-19 weights."""
 
-    An ``int`` size resizes the shorter edge (aspect preserved); a tuple
-    forces an exact ``(H, W)``, which is how style images are matched to the
-    content image's shape. EXIF orientation (as written by phone cameras) is
-    applied, so photos load the way image viewers show them.
-    """
-    with Image.open(path) as raw:
-        img = ImageOps.exif_transpose(raw).convert("RGB")
-    tensor = TF.to_tensor(TF.resize(img, size, antialias=True))
-    return tensor.unsqueeze(0).to(device)
+    content_layers: tuple[str, ...]
+    style_layers: tuple[str, ...]
+    content_weight: float
+    style_weight: float
 
 
-def save_image(tensor: torch.Tensor, path: str | Path) -> None:
-    """Write a ``(1, 3, H, W)`` tensor to disk (format from the file extension)."""
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    TF.to_pil_image(tensor.detach().squeeze(0).clamp(0, 1).cpu()).save(path)
+TUTORIAL_PRESET = Preset(
+    content_layers=("conv2_2",),
+    style_layers=("conv1_1", "conv1_2", "conv2_1", "conv2_2", "conv3_1"),
+    content_weight=1.0,
+    style_weight=1e6,
+)
+"""The v0.1 defaults (those of the PyTorch neural-transfer tutorial), kept for torchvision weights."""
+
+PRESETS: dict[str, Preset] = {
+    "torchvision": TUTORIAL_PRESET,
+    "random": TUTORIAL_PRESET,
+}
+"""Default :class:`Preset` for each :class:`~neural_style.model.VGG19` ``source``."""
 
 
-# ITU-R BT.601 RGB <-> YIQ; Y carries luminance, I/Q carry colour.
-_RGB2YIQ = torch.tensor([[0.299, 0.587, 0.114], [0.596, -0.274, -0.322], [0.211, -0.523, 0.312]])
-_YIQ2RGB = torch.linalg.inv(_RGB2YIQ)
-
-
-def _convert(img: torch.Tensor, matrix: torch.Tensor) -> torch.Tensor:
-    return torch.einsum("ij,bjhw->bihw", matrix.to(img.device, img.dtype), img)
-
-
-def preserve_colors(stylised: torch.Tensor, content: torch.Tensor) -> torch.Tensor:
-    """Keep the stylised luminance but restore the content image's colours.
-
-    This is the colour-preservation variant from Gatys et al., "Preserving
-    Color in Neural Artistic Style Transfer" (2016).
-    """
-    y = _convert(stylised, _RGB2YIQ)[:, :1]
-    iq = _convert(content, _RGB2YIQ)[:, 1:]
-    return _convert(torch.cat([y, iq], dim=1), _YIQ2RGB).clamp(0, 1)
-
-
-@dataclass
+@dataclass(frozen=True)
 class TransferConfig:
-    """Hyper-parameters for one style-transfer run."""
+    """Hyper-parameters of one style-transfer run.
+
+    ``None`` for the layers or the content/style weights means "use the
+    :data:`PRESETS` entry of the network's weight source".
+
+    ``style_blend`` weights the style images: they are normalised and the
+    Gram matrices averaged, which interpolates between styles.
+    """
 
     steps: int = 300
-    style_weight: float = 1e6
-    content_weight: float = 1.0
+    content_weight: float | None = None
+    style_weight: float | None = None
     tv_weight: float = 0.0
-    optimizer: str = "lbfgs"
+    content_layers: tuple[str, ...] | None = None
+    style_layers: tuple[str, ...] | None = None
+    pooling: Pooling = "max"
+    optimizer: OptimizerName = "lbfgs"
     lr: float = 0.02
-    init: str = "content"
-    style_blend: list[float] | None = None
-    content_layers: tuple[str, ...] = DEFAULT_CONTENT_LAYERS
-    style_layers: tuple[str, ...] = DEFAULT_STYLE_LAYERS
+    init: InitName = "content"
+    style_blend: tuple[float, ...] | None = None
     seed: int = 0
-    history: list[dict[str, float]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        choices: dict[str, tuple[str, ...]] = {
+            "pooling": get_args(Pooling),
+            "optimizer": get_args(OptimizerName),
+            "init": get_args(InitName),
+        }
+        for name, allowed in choices.items():
+            if getattr(self, name) not in allowed:
+                raise ValueError(f"unknown {name} {getattr(self, name)!r} (expected one of {allowed})")
+        if self.steps < 1:
+            raise ValueError("steps must be >= 1")
+        for name in ("content_weight", "style_weight", "tv_weight"):
+            value = getattr(self, name)
+            if value is not None and value < 0:
+                raise ValueError(f"{name} must be non-negative")
+        if self.lr <= 0:
+            raise ValueError("lr must be positive")
+        if self.style_blend is not None and (
+            any(w < 0 for w in self.style_blend) or sum(self.style_blend) <= 0
+        ):
+            raise ValueError("style_blend weights must be non-negative with a positive sum")
+
+    def resolved(self, source: str) -> TransferConfig:
+        """Return a copy with every ``None`` replaced by the preset for ``source``."""
+        preset = PRESETS[source]
+        return replace(
+            self,
+            content_layers=self.content_layers if self.content_layers is not None else preset.content_layers,
+            style_layers=self.style_layers if self.style_layers is not None else preset.style_layers,
+            content_weight=self.content_weight if self.content_weight is not None else preset.content_weight,
+            style_weight=self.style_weight if self.style_weight is not None else preset.style_weight,
+        )
 
 
-ProgressFn = Callable[[int, dict[str, float], torch.Tensor], None]
+@dataclass(frozen=True)
+class LossRecord:
+    """Loss terms (already multiplied by their weights) at the start of one optimisation step.
+
+    That is the loss of the image the step starts from, so ``history[k]`` describes
+    the result of ``k`` completed steps.
+    """
+
+    step: int
+    total: float
+    content: float
+    style: float
+    tv: float
+    elapsed: float
+    """Seconds from the start of the synthesis (target computation included) to this evaluation."""
+
+
+@dataclass(frozen=True)
+class TransferResult:
+    """Output of :func:`stylize`."""
+
+    image: torch.Tensor
+    """Final RGB image ``(1, 3, H, W)`` in ``[0, 1]``."""
+    history: tuple[LossRecord, ...]
+    config: TransferConfig
+    """The configuration with presets resolved."""
+    seconds: float
+
+
+ProgressFn = Callable[[LossRecord, torch.Tensor], None]
+"""Called after every step with the step's losses and a copy of the current RGB image."""
+
+
+class Objective:
+    """The style-transfer loss for one content image and its style targets.
+
+    Targets are computed once at construction. Calling the objective on a
+    candidate image returns the weighted total and its parts.
+    """
+
+    def __init__(
+        self,
+        vgg: VGG19,
+        content: torch.Tensor,
+        styles: Sequence[torch.Tensor],
+        config: TransferConfig | None = None,
+    ) -> None:
+        cfg = (config or TransferConfig()).resolved(vgg.source)
+        assert cfg.content_layers is not None and cfg.style_layers is not None
+        if not styles:
+            raise ValueError("at least one style image is required")
+        if cfg.style_blend is not None and len(cfg.style_blend) != len(styles):
+            raise ValueError("style_blend needs exactly one weight per style image")
+        if not cfg.style_layers and not cfg.content_layers:
+            raise ValueError("at least one content or style layer is required")
+
+        self.config = cfg
+        self.content = content
+        self.extractor = FeatureExtractor(vgg, cfg.content_layers + cfg.style_layers, cfg.pooling)
+        self.extractor.to(content.device)
+        height, width = content.shape[-2:]
+
+        with torch.no_grad():
+            features = self.extractor(content)
+            self.content_targets = {name: features[name] for name in cfg.content_layers}
+            # Gram matrices are averages over positions, so style images keep their own aspect
+            # ratio; they are resized to the content's pixel count rather than to its shape.
+            prepared = [resize_to_area(s, height * width) for s in styles]
+            self.prepared_styles = prepared
+            """Style images as used, resized to the content's pixel count."""
+            self.style_shapes = [(s.shape[-2], s.shape[-1]) for s in prepared]
+            style_features = [self.extractor(s) for s in prepared]
+            blend = cfg.style_blend or (1.0,) * len(styles)
+            total = sum(blend)
+            self.style_targets = {
+                name: sum(
+                    (w / total * gram_matrix(f[name]) for w, f in zip(blend, style_features, strict=True)),
+                    torch.zeros(()),
+                )
+                for name in cfg.style_layers
+            }
+
+    def __call__(self, image: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        """Return the weighted total loss of ``image`` and its weighted parts."""
+        cfg = self.config
+        assert cfg.content_weight is not None and cfg.style_weight is not None
+        if tuple(image.shape[1:]) != tuple(self.content.shape[1:]):
+            raise ValueError(
+                f"expected an image of shape {tuple(self.content.shape)}, got {tuple(image.shape)}"
+            )
+        features = self.extractor(image)
+        zero = image.new_zeros(())
+        content = sum(
+            (F.mse_loss(features[name], target) for name, target in self.content_targets.items()), zero
+        )
+        style = sum(
+            (F.mse_loss(gram_matrix(features[name]), target) for name, target in self.style_targets.items()),
+            zero,
+        )
+        tv = total_variation(image) if cfg.tv_weight > 0 else zero
+        parts = {
+            "content": cfg.content_weight * content,
+            "style": cfg.style_weight * style,
+            "tv": cfg.tv_weight * tv,
+        }
+        return parts["content"] + parts["style"] + parts["tv"], parts
+
+
+def _initial_image(objective: Objective, seed: int) -> torch.Tensor:
+    content = objective.content
+    if objective.config.init == "content":
+        return content.clone()
+    generator = torch.Generator().manual_seed(seed)
+    return torch.rand(content.shape, generator=generator).to(content.device)
+
+
+def _make_optimizer(config: TransferConfig, image: torch.Tensor) -> torch.optim.Optimizer:
+    if config.optimizer == "adam":
+        return torch.optim.Adam([image], lr=config.lr)
+    # One function evaluation per step; the curvature pairs persist across steps.
+    return torch.optim.LBFGS([image], max_iter=1)
+
+
+def _optimise(
+    objective: Objective,
+    image: torch.Tensor,
+    steps: int,
+    started: float,
+    on_progress: ProgressFn | None,
+) -> tuple[torch.Tensor, list[LossRecord]]:
+    image = image.detach().clone().requires_grad_(True)
+    optimizer = _make_optimizer(objective.config, image)
+    history: list[LossRecord] = []
+    for step in range(1, steps + 1):
+        parts: dict[str, float] = {}
+
+        def closure(parts: dict[str, float] = parts) -> float:
+            with torch.no_grad():
+                image.clamp_(0, 1)
+            optimizer.zero_grad()
+            total, terms = objective(image)
+            torch.autograd.backward(total)
+            parts.update({k: float(v.detach()) for k, v in terms.items()}, total=float(total.detach()))
+            parts["elapsed"] = time.perf_counter() - started
+            return parts["total"]
+
+        optimizer.step(closure)
+        record = LossRecord(
+            step=step,
+            total=parts["total"],
+            content=parts["content"],
+            style=parts["style"],
+            tv=parts["tv"],
+            elapsed=parts["elapsed"],
+        )
+        history.append(record)
+        if on_progress is not None:
+            with torch.no_grad():
+                on_progress(record, image.detach().clamp(0, 1))
+    with torch.no_grad():
+        image.clamp_(0, 1)
+    return image.detach(), history
 
 
 def stylize(
-    cnn: nn.Sequential,
+    vgg: VGG19,
     content: torch.Tensor,
-    styles: list[torch.Tensor],
-    config: TransferConfig,
+    styles: Sequence[torch.Tensor],
+    config: TransferConfig | None = None,
+    *,
     on_progress: ProgressFn | None = None,
-) -> torch.Tensor:
-    """Optimise an image so its VGG features match ``content`` and ``styles``.
+) -> TransferResult:
+    """Optimise an image so its VGG-19 features match ``content`` and ``styles``.
 
-    The network weights stay frozen; the *pixels* of the input image are the
-    only parameters. L-BFGS converges in far fewer steps than Adam for this
-    problem, but Adam uses less memory and behaves better on MPS.
+    ``content`` fixes the output resolution; style images may have any size and
+    aspect ratio (they are resized to the content's pixel count).
+
+    L-BFGS converges in far fewer steps than Adam here; Adam uses less memory.
     """
-    if config.steps < 1:
-        raise ValueError("steps must be >= 1")
-    torch.manual_seed(config.seed)
-    net = build_style_model(
-        cnn, content, styles, config.style_blend, config.content_layers, config.style_layers
+    started = time.perf_counter()
+    objective = Objective(vgg, content, styles, config)
+    cfg = objective.config
+    working, history = _optimise(
+        objective, _initial_image(objective, cfg.seed), cfg.steps, started, on_progress
     )
-
-    if config.init == "content":
-        image = content.clone()
-    elif config.init == "noise":
-        image = torch.rand_like(content)
-    else:
-        raise ValueError(f"unknown init {config.init!r} (expected 'content' or 'noise')")
-    image.requires_grad_(True)
-
-    if config.optimizer == "lbfgs":
-        opt: torch.optim.Optimizer = torch.optim.LBFGS([image], max_iter=1)
-    elif config.optimizer == "adam":
-        opt = torch.optim.Adam([image], lr=config.lr)
-    else:
-        raise ValueError(f"unknown optimizer {config.optimizer!r} (expected 'lbfgs' or 'adam')")
-
-    for step in range(1, config.steps + 1):
-        record: dict[str, float] = {}
-
-        def closure(step: int = step, record: dict[str, float] = record) -> torch.Tensor:
-            with torch.no_grad():
-                image.clamp_(0, 1)
-            opt.zero_grad()
-            net.model(image)
-            style = config.style_weight * sum(p.loss for p in net.style_losses)
-            content_term = config.content_weight * sum(p.loss for p in net.content_losses)
-            tv = config.tv_weight * total_variation(image)
-            loss = style + content_term + tv
-            loss.backward()
-            record.update(
-                step=step,
-                style=float(style.detach()) if torch.is_tensor(style) else float(style),
-                content=float(content_term.detach())
-                if torch.is_tensor(content_term)
-                else float(content_term),
-                tv=float(tv.detach()),
-                total=float(loss.detach()),
-            )
-            return loss
-
-        opt.step(closure)
-        config.history.append(dict(record))
-        if on_progress is not None:
-            on_progress(step, record, image.detach())
-
-    with torch.no_grad():
-        image.clamp_(0, 1)
-    return image.detach()
+    return TransferResult(
+        image=working, history=tuple(history), config=cfg, seconds=time.perf_counter() - started
+    )

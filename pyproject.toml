@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Houssam Mehdi" }]
-dependencies = ["torch>=2.1", "torchvision>=0.16", "pillow>=10"]
+dependencies = ["torch>=2.1", "torchvision>=0.16", "numpy>=1.24", "pillow>=10"]
 
 [project.optional-dependencies]
 # Exact pins: formatter, linter and test-runner versions decide what CI accepts.

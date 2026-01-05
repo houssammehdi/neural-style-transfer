@@ -18,10 +18,11 @@ installable package with a CLI.
 
 ## Features
 
-- VGG-19 feature extractor, truncated after the last loss probe to save memory and compute
-- Content loss on `conv_4`, style loss on `conv_1…conv_5` (configurable)
+- VGG-19 feature extractor, truncated after the deepest layer the loss uses
+- Canonical VGG-19 layer names (`conv4_2`, `relu3_1`, `pool2`, …); defaults: content `conv2_2`,
+  style `conv1_1…conv3_1` (the PyTorch tutorial's choice), all configurable
 - **Multi-style blending** — interpolate between several paintings with `--blend`
-- **Colour preservation** — keep the photo's colours, transfer only the brush-work (YIQ luminance transfer)
+- **Colour preservation** — keep the photo's colours (a post-hoc YIQ luminance swap)
 - Total-variation regularisation against high-frequency noise
 - L-BFGS (fast convergence) or Adam (lower memory, works well on Apple MPS)
 - Content or noise initialisation, reproducible seeds, intermediate frame export
@@ -35,8 +36,8 @@ flowchart LR
     S["Style image(s)"] --> N
     X["Generated image<br/>(pixels = parameters)"] --> N[ImageNet<br/>normalisation]
     N --> V["VGG-19 conv blocks<br/>(frozen weights)"]
-    V -->|conv_4 activations| CL["Content loss<br/>MSE of features"]
-    V -->|conv_1..5 activations| SL["Style loss<br/>MSE of Gram matrices"]
+    V -->|conv2_2 activations| CL["Content loss<br/>MSE of features"]
+    V -->|conv1_1..conv3_1 activations| SL["Style loss<br/>MSE of Gram matrices"]
     X --> TV[Total variation]
     CL --> L((weighted sum))
     SL --> L
@@ -49,14 +50,14 @@ Gram matrix $G = F F^\top / (CHW)$: which features fire *together*, regardless o
 The generated image $x$ minimises
 
 $$
-\mathcal{L}(x) = \alpha \sum_{l \in \text{content}} \lVert F_l(x) - F_l(c) \rVert^2
-             + \beta \sum_{l \in \text{style}} \Big\lVert G_l(x) - \sum_k w_k\, G_l(s_k) \Big\rVert^2
+\mathcal{L}(x) = \alpha \sum_{l \in \text{content}} \operatorname{mean}\big(F_l(x) - F_l(c)\big)^2
+             + \beta \sum_{l \in \text{style}} \operatorname{mean}\Big(G_l(x) - \sum_k w_k\, G_l(s_k)\Big)^2
              + \gamma\, \mathrm{TV}(x)
 $$
 
-where the weights $w_k$ blend multiple style images. Only the pixels of $x$ are optimised; the
-network is frozen. The loss probes are transparent `nn.Module`s inserted after the chosen conv
-layers, so a single forward pass computes every term.
+where the means run over all entries (both terms are mean squared errors) and the weights $w_k$
+blend multiple style images. Only the pixels of $x$ are optimised; the network is frozen. A feature
+extractor returns the activations of every requested layer from one forward pass.
 
 ## Quickstart
 
@@ -86,14 +87,14 @@ As a library:
 
 ```python
 import torch
-from neural_style import TransferConfig, load_image, load_vgg19_features, save_image, stylize
+from neural_style import TransferConfig, load_image, load_vgg19, save_image, stylize
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-content = load_image("photo.jpg", 512, device)
-style = load_image("painting.jpg", 512, device)  # any shape: aspect ratio is kept
+content = load_image("photo.jpg", 512, device)  # shorter edge 512 px
+style = load_image("painting.jpg", None, device)  # any size and aspect ratio
 
-result = stylize(load_vgg19_features().to(device), content, [style], TransferConfig(steps=300))
-save_image(result, "out.jpg")
+result = stylize(load_vgg19("torchvision").to(device), content, [style], TransferConfig(steps=300))
+save_image(result.image, "out.jpg")  # result.history holds the loss of every step
 ```
 
 ## Tuning notes
@@ -119,7 +120,7 @@ that optimisation reduces the loss for both optimisers, colour preservation, and
 ## Repository layout
 
 ```
-neural_style/   losses.py · model.py · transfer.py · cli.py
+neural_style/   layers.py · model.py · losses.py · color.py · image.py · transfer.py · cli.py
 tests/          fast offline tests
 notebooks/      original 2019 notebooks: the PyTorch experiment, and a TensorFlow version
                 written while following the deeplearning.ai CNN course exercise
