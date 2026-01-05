@@ -90,7 +90,7 @@ from neural_style import TransferConfig, load_image, load_vgg19_features, save_i
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 content = load_image("photo.jpg", 512, device)
-style = load_image("painting.jpg", tuple(content.shape[-2:]), device)
+style = load_image("painting.jpg", 512, device)  # any shape: aspect ratio is kept
 
 result = stylize(load_vgg19_features().to(device), content, [style], TransferConfig(steps=300))
 save_image(result, "out.jpg")

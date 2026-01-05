@@ -46,7 +46,9 @@ def main(argv: list[str] | None = None) -> int:
     device = pick_device(args.device)
     size = args.size or (512 if device.type != "cpu" else 256)
     content = load_image(args.content, size, device)
-    styles = [load_image(s, tuple(content.shape[-2:]), device) for s in args.styles]
+    # Gram matrices are averages over positions, so style images need not match the content's
+    # shape; resizing them to it would stretch the brush strokes. Match the shorter edge instead.
+    styles = [load_image(s, min(content.shape[-2:]), device) for s in args.styles]
     cnn = load_vgg19_features(pretrained=True).to(device)
 
     config = TransferConfig(

@@ -121,6 +121,35 @@ def test_exif_orientation_is_applied(tmp_path) -> None:
     assert loaded[0, 0, :, :3].mean() < 0.2
 
 
+def test_cli_keeps_the_style_aspect_ratio(tmp_path, monkeypatch, cnn: torch.nn.Sequential) -> None:
+    # Regression: style images were resized to the content's exact shape, stretching them.
+    from neural_style import cli
+
+    Image.new("RGB", (36, 24)).save(tmp_path / "content.png")
+    Image.new("RGB", (30, 40)).save(tmp_path / "style.png")
+    seen: list[tuple[int, ...]] = []
+
+    def fake_stylize(
+        cnn: object,
+        content: torch.Tensor,
+        styles: list[torch.Tensor],
+        config: object,
+        on_progress: object = None,
+    ) -> torch.Tensor:
+        seen.extend(tuple(s.shape) for s in styles)
+        return content
+
+    monkeypatch.setattr(cli, "load_vgg19_features", lambda pretrained: cnn)
+    monkeypatch.setattr(cli, "stylize", fake_stylize)
+    out = tmp_path / "out.png"
+    assert (
+        cli.main([str(tmp_path / "content.png"), str(tmp_path / "style.png"), "-o", str(out), "--size", "16"])
+        == 0
+    )
+    ((_, _, height, width),) = seen
+    assert width == 16 and abs(height / width - 40 / 30) < 0.05
+
+
 def test_cli_parser_defaults() -> None:
     args = build_parser().parse_args(["c.jpg", "s1.jpg", "s2.jpg", "--blend", "1", "2"])
     assert len(args.styles) == 2 and args.blend == [1.0, 2.0] and args.optimizer == "lbfgs"
