@@ -14,6 +14,7 @@ dev = [
     "pytest==9.1.1",
     "hypothesis==6.168.1",
     "ruff==0.16.9",
+    "mypy==2.3.1",
 ]
 
 [project.scripts]
@@ -26,14 +27,31 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = ["neural_style"]
 
+[tool.setuptools.package-data]
+neural_style = ["py.typed"]
+
 [tool.ruff]
 line-length = 110
 target-version = "py310"
 extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["N812"]
+# D1: every public module, class and function has a docstring (magic methods and __init__ excepted).
+select = ["E", "F", "I", "UP", "B", "SIM", "D1"]
+ignore = ["D105", "D107"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D103"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+files = ["neural_style", "tests"]
+
+[[tool.mypy.overrides]]
+# Ships no type information.
+module = ["torchvision", "torchvision.*"]
+ignore_missing_imports = true
