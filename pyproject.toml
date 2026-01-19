@@ -49,7 +49,7 @@ testpaths = ["tests"]
 [tool.mypy]
 strict = true
 python_version = "3.10"
-files = ["neural_style", "tests"]
+files = ["neural_style", "tests", "scripts"]
 
 [[tool.mypy.overrides]]
 # Ships no type information.
