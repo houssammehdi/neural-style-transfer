@@ -30,6 +30,7 @@ class Preset:
     style_layers: tuple[str, ...]
     content_weight: float
     style_weight: float
+    pooling: Pooling
 
 
 TUTORIAL_PRESET = Preset(
@@ -37,12 +38,23 @@ TUTORIAL_PRESET = Preset(
     style_layers=("conv1_1", "conv1_2", "conv2_1", "conv2_2", "conv3_1"),
     content_weight=1.0,
     style_weight=1e6,
+    pooling="max",
 )
 """The v0.1 defaults (those of the PyTorch neural-transfer tutorial), kept for torchvision weights."""
+
+GATYS_PRESET = Preset(
+    content_layers=("relu4_2",),
+    style_layers=("relu1_1", "relu2_1", "relu3_1", "relu4_1", "relu5_1"),
+    content_weight=1.0,
+    style_weight=1e2,
+    pooling="avg",
+)
+"""Layers and pooling of Gatys et al. (2016); weights calibrated on the Caffe VGG-19 (``docs/method.md``)."""
 
 PRESETS: dict[str, Preset] = {
     "torchvision": TUTORIAL_PRESET,
     "random": TUTORIAL_PRESET,
+    "caffe": GATYS_PRESET,
 }
 """Default :class:`Preset` for each :class:`~neural_style.model.VGG19` ``source``."""
 
@@ -51,8 +63,8 @@ PRESETS: dict[str, Preset] = {
 class TransferConfig:
     """Hyper-parameters of one style-transfer run.
 
-    ``None`` for the layers or the content/style weights means "use the
-    :data:`PRESETS` entry of the network's weight source".
+    ``None`` for the layers, the content/style weights or the pooling means
+    "use the :data:`PRESETS` entry of the network's weight source".
 
     ``style_blend`` weights the style images: they are normalised and the
     Gram matrices averaged, which interpolates between styles.
@@ -64,7 +76,7 @@ class TransferConfig:
     tv_weight: float = 0.0
     content_layers: tuple[str, ...] | None = None
     style_layers: tuple[str, ...] | None = None
-    pooling: Pooling = "max"
+    pooling: Pooling | None = None
     optimizer: OptimizerName = "lbfgs"
     lr: float = 0.02
     init: InitName = "content"
@@ -72,8 +84,8 @@ class TransferConfig:
     seed: int = 0
 
     def __post_init__(self) -> None:
-        choices: dict[str, tuple[str, ...]] = {
-            "pooling": get_args(Pooling),
+        choices: dict[str, tuple[str | None, ...]] = {
+            "pooling": (*get_args(Pooling), None),
             "optimizer": get_args(OptimizerName),
             "init": get_args(InitName),
         }
@@ -102,6 +114,7 @@ class TransferConfig:
             style_layers=self.style_layers if self.style_layers is not None else preset.style_layers,
             content_weight=self.content_weight if self.content_weight is not None else preset.content_weight,
             style_weight=self.style_weight if self.style_weight is not None else preset.style_weight,
+            pooling=self.pooling if self.pooling is not None else preset.pooling,
         )
 
 
@@ -153,7 +166,7 @@ class Objective:
         config: TransferConfig | None = None,
     ) -> None:
         cfg = (config or TransferConfig()).resolved(vgg.source)
-        assert cfg.content_layers is not None and cfg.style_layers is not None
+        assert cfg.content_layers is not None and cfg.style_layers is not None and cfg.pooling is not None
         if not styles:
             raise ValueError("at least one style image is required")
         if cfg.style_blend is not None and len(cfg.style_blend) != len(styles):

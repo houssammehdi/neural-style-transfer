@@ -68,7 +68,10 @@ pip install -e .
 python -m neural_style photo.jpg painting.jpg -o out.jpg --steps 300
 ```
 
-The first run downloads the ImageNet VGG-19 weights (~550 MB) through torchvision.
+The first run downloads the ImageNet VGG-19 weights (~550 MB) through torchvision. Without access
+to download.pytorch.org, `--weights caffe` uses the original Caffe VGG-19 of Simonyan & Zisserman
+(the weights Gatys et al. used) instead: 80 MB, fetched once from a GitHub release asset,
+SHA-256 verified and cached in `~/.cache/neural-style` (needs `pip install -e ".[caffe]"`).
 
 More options:
 

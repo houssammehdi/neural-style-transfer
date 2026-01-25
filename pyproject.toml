@@ -9,6 +9,8 @@ authors = [{ name = "Houssam Mehdi" }]
 dependencies = ["torch>=2.1", "torchvision>=0.16", "numpy>=1.24", "pillow>=10"]
 
 [project.optional-dependencies]
+# Converting the original Caffe VGG-19 weights (Keras HDF5 release) needs h5py.
+caffe = ["h5py>=3.8"]
 # Exact pins: formatter, linter and test-runner versions decide what CI accepts.
 dev = [
     "pytest==9.1.1",
@@ -52,6 +54,6 @@ python_version = "3.10"
 files = ["neural_style", "tests", "scripts"]
 
 [[tool.mypy.overrides]]
-# Ships no type information.
-module = ["torchvision", "torchvision.*"]
+# Neither ships type information.
+module = ["h5py", "torchvision", "torchvision.*"]
 ignore_missing_imports = true

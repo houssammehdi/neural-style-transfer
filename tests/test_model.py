@@ -40,6 +40,13 @@ def test_imagenet_normalization() -> None:
     torch.testing.assert_close(out, expected)
 
 
+def test_caffe_normalization_is_bgr_0_255_mean_subtracted() -> None:
+    red = torch.tensor([1.0, 0.0, 0.0]).view(1, 3, 1, 1)
+    out = Normalization.caffe()(red).flatten()
+    # channel order B, G, R; no division by a standard deviation
+    torch.testing.assert_close(out, torch.tensor([-103.939, -116.779, 255.0 - 123.68]))
+
+
 def test_vgg19_is_frozen_and_validates_its_layout(vgg: VGG19) -> None:
     assert not any(p.requires_grad for p in vgg.parameters())
     assert not vgg.training
@@ -82,7 +89,7 @@ def test_torchvision_weights_keep_only_the_features(monkeypatch: pytest.MonkeyPa
     assert vgg.source == "torchvision"
     conv = vgg.features[0]
     assert isinstance(conv, nn.Conv2d) and torch.all(conv.weight == 0.5)
-    assert isinstance(vgg.normalization, Normalization)
+    assert isinstance(vgg.normalization, Normalization) and not vgg.normalization.bgr
 
 
 def test_unreachable_torchvision_weights_are_explained(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -90,7 +97,7 @@ def test_unreachable_torchvision_weights_are_explained(monkeypatch: pytest.Monke
         raise urllib.error.URLError("Tunnel connection failed: 403 Forbidden")
 
     monkeypatch.setattr(type(VGG19_Weights.IMAGENET1K_V1), "get_state_dict", fail)
-    with pytest.raises(WeightsUnavailableError, match="download.pytorch.org"):
+    with pytest.raises(WeightsUnavailableError, match="caffe"):
         load_vgg19("torchvision")
 
 

@@ -38,11 +38,14 @@ def test_history_belongs_to_the_run_not_the_config(vgg: VGG19) -> None:
 
 def test_presets_follow_the_weight_source() -> None:
     config = TransferConfig(style_weight=5.0)
-    random = config.resolved("random")
+    caffe, random = config.resolved("caffe"), config.resolved("random")
+    assert caffe.content_layers == ("relu4_2",)
+    assert caffe.style_layers == ("relu1_1", "relu2_1", "relu3_1", "relu4_1", "relu5_1")
     assert random.content_layers == ("conv2_2",)  # v0.1 behaviour for torchvision/random weights
-    assert random.style_layers == ("conv1_1", "conv1_2", "conv2_1", "conv2_2", "conv3_1")
-    assert random.style_weight == 5.0  # explicit values win
-    assert random.content_weight == PRESETS["random"].content_weight
+    assert caffe.style_weight == random.style_weight == 5.0  # explicit values win
+    assert caffe.content_weight == PRESETS["caffe"].content_weight
+    assert (caffe.pooling, random.pooling) == ("avg", "max")
+    assert TransferConfig(pooling="max").resolved("caffe").pooling == "max"
 
 
 @pytest.mark.parametrize(

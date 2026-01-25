@@ -4,44 +4,69 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from collections.abc import Iterable, Sequence
+from pathlib import Path
 from typing import Literal, get_args
 
 import torch
 from torch import nn
 
 from .layers import VGG19_BLOCK_DEPTHS, VGG19_LAYERS, VGG19_WIDTHS
+from .weights import CAFFE_VGG19, ProgressFn, fetch, keras_vgg19_state_dict
 
-WeightSource = Literal["torchvision", "random"]
+WeightSource = Literal["torchvision", "caffe", "random"]
 WEIGHT_SOURCES: tuple[WeightSource, ...] = get_args(WeightSource)
 Pooling = Literal["max", "avg"]
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
+CAFFE_MEAN_BGR = (103.939, 116.779, 123.68)
+"""Per-channel ImageNet mean pixel of the Caffe VGG models, in B, G, R order on a 0-255 scale."""
 
 
 class Normalization(nn.Module):
     """Maps an RGB image in ``[0, 1]`` to the input a particular VGG-19 was trained on.
 
-    Computes ``(x - mean) / std`` per channel; torchvision's weights expect the
-    ImageNet mean and standard deviation.
+    Computes ``(x[:, order] * scale - mean) / std`` per channel. The torchvision
+    weights expect RGB normalised with the ImageNet mean and standard deviation;
+    the Caffe weights expect BGR on a 0-255 scale with the mean pixel subtracted
+    and no division.
     """
 
     mean: torch.Tensor
     std: torch.Tensor
 
-    def __init__(self, mean: Sequence[float], std: Sequence[float]) -> None:
+    def __init__(
+        self,
+        mean: Sequence[float],
+        std: Sequence[float],
+        scale: float = 1.0,
+        bgr: bool = False,
+    ) -> None:
         super().__init__()
         self.register_buffer("mean", torch.tensor(mean, dtype=torch.float32).view(1, 3, 1, 1))
         self.register_buffer("std", torch.tensor(std, dtype=torch.float32).view(1, 3, 1, 1))
+        self.scale = scale
+        self.bgr = bgr
 
     @classmethod
     def imagenet(cls) -> Normalization:
         """Normalisation for torchvision's ImageNet weights."""
         return cls(IMAGENET_MEAN, IMAGENET_STD)
 
+    @classmethod
+    def caffe(cls) -> Normalization:
+        """Normalisation for the original Caffe weights: RGB -> BGR, x255, minus the mean pixel."""
+        return cls(CAFFE_MEAN_BGR, (1.0, 1.0, 1.0), scale=255.0, bgr=True)
+
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Normalise a ``(B, 3, H, W)`` RGB batch in ``[0, 1]``."""
-        return (image - self.mean) / self.std
+        if self.bgr:
+            image = image.flip(1)
+        return (image * self.scale - self.mean) / self.std
+
+    def extra_repr(self) -> str:
+        """Show the scale and channel order in ``repr``."""
+        return f"scale={self.scale}, bgr={self.bgr}"
 
 
 def make_vgg19_features(widths: Sequence[int] = VGG19_WIDTHS) -> nn.Sequential:
@@ -112,8 +137,9 @@ def _torchvision_state_dict() -> dict[str, torch.Tensor]:
     except (OSError, RuntimeError) as exc:
         raise WeightsUnavailableError(
             f"could not load torchvision's VGG-19 weights ({exc}). They are downloaded from "
-            "download.pytorch.org into the torch hub cache, so that host must be reachable "
-            "once (or the file placed in the cache by hand)."
+            "download.pytorch.org into the torch hub cache; if that host is unreachable use "
+            "weights='caffe' (CLI: --weights caffe), which fetches the original Caffe VGG-19 "
+            "from a GitHub release asset."
         ) from exc
     prefix = "features."
     return {k.removeprefix(prefix): v for k, v in full.items() if k.startswith(prefix)}
@@ -130,12 +156,21 @@ def _random_features(seed: int) -> nn.Sequential:
     return features
 
 
-def load_vgg19(weights: WeightSource = "torchvision", *, seed: int = 0) -> VGG19:
+def load_vgg19(
+    weights: WeightSource = "torchvision",
+    *,
+    cache_dir: Path | None = None,
+    progress: ProgressFn | None = None,
+    seed: int = 0,
+) -> VGG19:
     """Load a frozen VGG-19 in eval mode, paired with its input normalisation.
 
     ``weights`` is one of:
 
     * ``"torchvision"`` -- torchvision's ImageNet weights (cached by torch hub);
+    * ``"caffe"`` -- the original Caffe weights of Simonyan & Zisserman, fetched
+      once from GitHub (80 MB), SHA-256 verified and cached in ``cache_dir``
+      (default :func:`neural_style.weights.default_cache_dir`); needs ``h5py``;
     * ``"random"`` -- an untrained network (He initialisation seeded by
       ``seed``), for tests and offline smoke runs only.
 
@@ -146,6 +181,11 @@ def load_vgg19(weights: WeightSource = "torchvision", *, seed: int = 0) -> VGG19
         features = make_vgg19_features()
         features.load_state_dict(_torchvision_state_dict())
         return VGG19(features, Normalization.imagenet(), "torchvision")
+    if weights == "caffe":
+        path = fetch(CAFFE_VGG19, cache_dir, progress)
+        features = make_vgg19_features()
+        features.load_state_dict(keras_vgg19_state_dict(path))
+        return VGG19(features, Normalization.caffe(), "caffe")
     if weights == "random":
         return VGG19(_random_features(seed), Normalization.imagenet(), "random")
     raise ValueError(f"unknown weights {weights!r}; expected one of {WEIGHT_SOURCES}")

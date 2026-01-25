@@ -40,7 +40,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--weights",
         choices=WEIGHT_SOURCES,
         default="torchvision",
-        help="VGG-19 weights: torchvision's ImageNet weights, or an untrained network for smoke tests",
+        help="VGG-19 weights: torchvision's ImageNet weights, the original Caffe weights used by "
+        "Gatys et al. (80 MB from GitHub, needs h5py), or an untrained network for smoke tests",
     )
     p.add_argument(
         "--size", type=int, help="shorter edge of the output in px (default 512 on GPU, 256 on CPU)"
@@ -53,7 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--style-layers", nargs="+", metavar="LAYER", help="e.g. relu1_1 relu2_1 (default: preset)"
     )
-    p.add_argument("--pooling", choices=get_args(Pooling), default="max")
+    p.add_argument("--pooling", choices=get_args(Pooling), help="max or avg (default: preset)")
     p.add_argument("--blend", type=float, nargs="+", help="weight of each style image")
     p.add_argument("--preserve-colors", action="store_true", help="keep the content image's colours")
     p.add_argument("--optimizer", choices=get_args(OptimizerName), default="lbfgs")
@@ -94,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     device = pick_device(args.device)
     try:
         vgg = load_vgg19(args.weights).to(device)
-    except WeightsUnavailableError as exc:
+    except (WeightsUnavailableError, ImportError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     content = load_image(args.content, args.size or (512 if device.type != "cpu" else 256), device)
