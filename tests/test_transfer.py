@@ -18,6 +18,7 @@ from neural_style import (
     guided_gram_matrix,
     stylize,
 )
+from neural_style.color import rgb_to_yiq, yiq_to_rgb
 
 
 def _images(seed: int, *shapes: tuple[int, int]) -> list[torch.Tensor]:
@@ -67,6 +68,7 @@ def test_presets_follow_the_weight_source() -> None:
         {"style_blend": (1.0, -1.0)},
         {"style_blend": (0.0, 0.0)},
         {"optimizer": "sgd"},
+        {"color": "sepia"},
         {"pooling": "min"},
     ],
 )
@@ -86,6 +88,8 @@ def test_objective_validates_its_inputs(vgg: VGG19) -> None:
     content, style = _images(10, (16, 16), (16, 16))
     with pytest.raises(ValueError, match=r"shape \(1, 3, 16, 16\)"):
         Objective(vgg, content, [style])(torch.rand(1, 3, 16, 17))
+    with pytest.raises(ValueError, match=r"shape \(1, 1, 16, 16\)"):
+        Objective(vgg, content, [style], TransferConfig(color="luminance"))(content)
     with pytest.raises(ValueError, match="one guidance channel per style"):
         Objective(vgg, content, [style, style], masks=[torch.ones(1, 1, 4, 4)])
     with pytest.raises(ValueError, match="one weight per style"):
@@ -96,6 +100,44 @@ def test_objective_validates_its_inputs(vgg: VGG19) -> None:
         Objective(vgg, content, [style], style_masks=[None])
     with pytest.raises(ValueError, match="at least one style"):
         Objective(vgg, content, [])
+
+
+def test_luminance_transfer_ignores_the_style_colours(vgg: VGG19) -> None:
+    # Regression: v0.1's "preserve colours" stylised in RGB and swapped the chroma afterwards,
+    # so the style's colours still shaped the result. Two styles that differ only in chroma
+    # must give the same luminance-only result.
+    g = torch.Generator().manual_seed(4)
+    content = torch.rand((1, 3, 32, 32), generator=g)
+    y = 0.3 + 0.4 * torch.rand((1, 1, 32, 32), generator=g)
+    iq = 0.1 * torch.rand((1, 2, 32, 32), generator=g) - 0.05
+    style, recoloured = yiq_to_rgb(torch.cat([y, iq], 1)), yiq_to_rgb(torch.cat([y, -iq], 1))
+    assert not torch.allclose(style, recoloured, atol=1e-2)
+    config = TransferConfig(steps=5, color="luminance")
+    a = stylize(vgg, content, [style], config).image
+    b = stylize(vgg, content, [recoloured], config).image
+    torch.testing.assert_close(a, b, atol=1e-4, rtol=0)
+    plain = TransferConfig(steps=5)
+    a_rgb = stylize(vgg, content, [style], plain).image
+    b_rgb = stylize(vgg, content, [recoloured], plain).image
+    assert (a_rgb - b_rgb).abs().max() > 1e-2
+
+
+def test_luminance_transfer_restores_the_content_chrominance(vgg: VGG19) -> None:
+    content, style = _images(5, (32, 32), (32, 32))
+    content = content * 0.5 + 0.25  # stay away from the gamut boundary
+    out = stylize(vgg, content, [style], TransferConfig(steps=5, color="luminance")).image
+    inside = ((out > 0) & (out < 1)).all(dim=1, keepdim=True).expand(-1, 2, -1, -1)
+    torch.testing.assert_close(
+        rgb_to_yiq(out)[:, 1:][inside], rgb_to_yiq(content)[:, 1:][inside], atol=1e-5, rtol=0
+    )
+
+
+def test_match_mode_recolours_the_style_to_the_content(vgg: VGG19) -> None:
+    content, style = _images(6, (32, 32), (32, 32))
+    content = content * 0.3 + 0.2  # dark and low-contrast
+    objective = Objective(vgg, content, [style], TransferConfig(color="match"))
+    prepared = objective.prepared_styles[0]
+    torch.testing.assert_close(prepared.mean(dim=(2, 3)), content.mean(dim=(2, 3)), atol=2e-3, rtol=0)
 
 
 def test_a_full_mask_is_the_same_as_no_mask(vgg: VGG19) -> None:
@@ -186,6 +228,20 @@ def test_progress_sees_every_step_and_an_independent_copy(vgg: VGG19) -> None:
     assert [r.step for r, _ in seen] == [1, 2, 3, 4]
     assert not torch.equal(seen[0][1], seen[-1][1])
     assert result.history == tuple(r for r, _ in seen)
+
+
+def test_luminance_progress_frames_are_in_colour(vgg: VGG19) -> None:
+    content, style = _images(15, (16, 16), (16, 16))
+    frames: list[torch.Tensor] = []
+    stylize(
+        vgg,
+        content,
+        [style],
+        TransferConfig(steps=2, color="luminance"),
+        on_progress=lambda r, i: frames.append(i),
+    )
+    assert frames[0].shape[1] == 3
+    assert not torch.allclose(frames[0][:, 0], frames[0][:, 1])  # not a grey image
 
 
 def test_loss_record_is_a_frozen_value() -> None:

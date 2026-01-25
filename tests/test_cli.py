@@ -29,13 +29,13 @@ def pictures(tmp_path: Path) -> dict[str, Path]:
 def test_parser_defaults() -> None:
     args = cli.build_parser().parse_args(["c.jpg", "s1.jpg", "s2.jpg", "--blend", "1", "2"])
     assert len(args.styles) == 2 and args.blend == [1.0, 2.0]
-    assert args.weights == "torchvision" and args.optimizer == "lbfgs" and not args.preserve_colors
+    assert args.weights == "torchvision" and args.optimizer == "lbfgs" and args.color == "style"
     assert args.steps == 300 and args.size is None and args.style_weight is None
 
 
 def test_end_to_end_run_writes_the_image_and_frames(pictures: dict[str, Path], tmp_path: Path) -> None:
     out = tmp_path / "out" / "result.jpg"
-    argv = [str(pictures["content"]), str(pictures["style"]), "-o", str(out), "--preserve-colors"]
+    argv = [str(pictures["content"]), str(pictures["style"]), "-o", str(out), "--color", "luminance"]
     argv += ["--weights", "random", "--size", "16", "--steps", "4", "--save-every", "2", "--device", "cpu"]
     assert cli.main(argv) == 0
     with Image.open(out) as img:

@@ -24,7 +24,9 @@ installable package with a CLI.
 - **Multi-style blending** — interpolate between several paintings with `--blend`
 - **Spatial control** — `--masks` applies each style to its own region, with guided Gram matrices
   (Gatys et al., CVPR 2017)
-- **Colour preservation** — keep the photo's colours (a post-hoc YIQ luminance swap)
+- **Colour control** (Gatys et al., 2016) — `--color luminance` transfers style on the luminance
+  channel only and keeps the photo's colours; `--color match` first recolours the painting to the
+  photo's colour mean and covariance (`--color-match eigen|cholesky`)
 - Total-variation regularisation against high-frequency noise
 - L-BFGS (fast convergence) or Adam (lower memory, works well on Apple MPS)
 - Content or noise initialisation, reproducible seeds, intermediate frame export
@@ -79,7 +81,7 @@ More options:
 
 ```bash
 # blend two styles 70/30 and keep the photo's colours
-python -m neural_style photo.jpg starry.jpg scream.jpg --blend 0.7 0.3 --preserve-colors
+python -m neural_style photo.jpg starry.jpg scream.jpg --blend 0.7 0.3 --color luminance
 
 # higher resolution on a GPU, smoother result, save a frame every 50 steps
 python -m neural_style photo.jpg painting.jpg --size 768 --tv-weight 1e-4 --save-every 50

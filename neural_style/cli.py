@@ -11,10 +11,10 @@ from typing import get_args
 import torch
 
 from . import __version__
-from .color import preserve_colors
+from .color import ColorMatchMethod
 from .image import load_image, load_mask, save_image
 from .model import WEIGHT_SOURCES, Pooling, WeightsUnavailableError, load_vgg19
-from .transfer import InitName, LossRecord, OptimizerName, TransferConfig, stylize
+from .transfer import ColorMode, InitName, LossRecord, OptimizerName, TransferConfig, stylize
 
 
 def pick_device(preferred: str = "auto") -> torch.device:
@@ -62,7 +62,14 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         help="spatial control: one greyscale mask per style image; style i is applied where mask i is white",
     )
-    p.add_argument("--preserve-colors", action="store_true", help="keep the content image's colours")
+    p.add_argument(
+        "--color",
+        choices=get_args(ColorMode),
+        default="style",
+        help="colour handling: style colours, luminance-only transfer, or style recoloured to the "
+        "content's colour statistics (Gatys et al., 2016)",
+    )
+    p.add_argument("--color-match", choices=get_args(ColorMatchMethod), default="eigen")
     p.add_argument("--optimizer", choices=get_args(OptimizerName), default="lbfgs")
     p.add_argument("--lr", type=float, default=0.02, help="learning rate (adam only)")
     p.add_argument("--init", choices=get_args(InitName), default="content")
@@ -95,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
             lr=args.lr,
             init=args.init,
             style_blend=tuple(args.blend) if args.blend else None,
+            color=args.color,
+            color_match=args.color_match,
             seed=args.seed,
         )
     except ValueError as exc:
@@ -120,14 +129,16 @@ def main(argv: list[str] | None = None) -> int:
             frame = args.output.with_name(f"{args.output.stem}_{record.step:04d}{args.output.suffix}")
             save_image(image, frame, args.quality)
 
-    print(f"device={device} weights={args.weights} size={tuple(content.shape[-2:])} styles={len(styles)}")
+    print(
+        f"device={device} weights={args.weights} size={tuple(content.shape[-2:])} "
+        f"styles={len(styles)} color={args.color}"
+    )
     started = time.perf_counter()
     try:
         result = stylize(vgg, content, styles, config, masks=masks, on_progress=report)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    image = preserve_colors(result.image, content) if args.preserve_colors else result.image
-    save_image(image, args.output, args.quality)
+    save_image(result.image, args.output, args.quality)
     print(f"saved {args.output} in {time.perf_counter() - started:.1f}s")
     return 0

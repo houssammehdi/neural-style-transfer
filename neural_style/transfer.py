@@ -16,10 +16,12 @@ from typing import Literal, get_args
 import torch
 import torch.nn.functional as F
 
+from .color import ColorMatchMethod, luminance, match_color, match_luminance, preserve_colors
 from .image import resize, resize_to_area
 from .losses import gram_matrix, guided_gram_matrix, total_variation
 from .model import VGG19, FeatureExtractor, Pooling
 
+ColorMode = Literal["style", "luminance", "match"]
 OptimizerName = Literal["lbfgs", "adam"]
 InitName = Literal["content", "noise"]
 
@@ -72,6 +74,11 @@ class TransferConfig:
     and their Gram matrices averaged, which interpolates between styles. With
     masks each style owns one region and its weight scales that region's style
     strength (default 1 each).
+
+    ``color`` selects the colour handling of Gatys et al. (2016): ``"style"``
+    (plain transfer), ``"luminance"`` (luminance-only transfer, the content's
+    colours are restored) or ``"match"`` (style images recoloured to the
+    content's colour mean and covariance first, using ``color_match``).
     """
 
     steps: int = 300
@@ -85,6 +92,8 @@ class TransferConfig:
     lr: float = 0.02
     init: InitName = "content"
     style_blend: tuple[float, ...] | None = None
+    color: ColorMode = "style"
+    color_match: ColorMatchMethod = "eigen"
     seed: int = 0
 
     def __post_init__(self) -> None:
@@ -92,6 +101,8 @@ class TransferConfig:
             "pooling": (*get_args(Pooling), None),
             "optimizer": get_args(OptimizerName),
             "init": get_args(InitName),
+            "color": get_args(ColorMode),
+            "color_match": get_args(ColorMatchMethod),
         }
         for name, allowed in choices.items():
             if getattr(self, name) not in allowed:
@@ -159,7 +170,9 @@ class Objective:
     """The style-transfer loss for one content image, its style targets and optional masks.
 
     Targets are computed once at construction. Calling the objective on a
-    candidate image returns the weighted total and its parts.
+    candidate image returns the weighted total and its parts. In luminance mode
+    candidates are single-channel luminance images; :meth:`working` converts an
+    RGB image into the space the objective expects.
 
     ``masks`` (one ``(1, 1, h, w)`` guidance channel per style, any size)
     switch on spatial control: style ``r`` is matched with guided Gram
@@ -192,20 +205,19 @@ class Objective:
 
         self.config = cfg
         self.content = content
+        self.channels = 1 if cfg.color == "luminance" else 3
         self.extractor = FeatureExtractor(vgg, cfg.content_layers + cfg.style_layers, cfg.pooling)
         self.extractor.to(content.device)
         height, width = content.shape[-2:]
 
         with torch.no_grad():
-            features = self.extractor(content)
+            features = self.extractor(self._network_input(self.working(content)))
             self.content_targets = {name: features[name] for name in cfg.content_layers}
-            # Gram matrices are averages over positions, so style images keep their own aspect
-            # ratio; they are resized to the content's pixel count rather than to its shape.
-            prepared = [resize_to_area(s, height * width) for s in styles]
+            prepared = [self._prepare_style(s, height * width) for s in styles]
             self.prepared_styles = prepared
-            """Style images as used, resized to the content's pixel count."""
+            """Style images as used: resized, and recoloured or reduced to luminance if configured."""
             self.style_shapes = [(s.shape[-2], s.shape[-1]) for s in prepared]
-            style_features = [self.extractor(s) for s in prepared]
+            style_features = [self.extractor(self._network_input(s)) for s in prepared]
             blend = cfg.style_blend or (1.0,) * len(styles)
 
             # One (weight, masks-per-layer, targets-per-layer) entry per region.
@@ -242,15 +254,39 @@ class Objective:
                     region = {name: per_layer[name][:, r : r + 1] for name in cfg.style_layers}
                     self.regions.append((weight, region, targets))
 
+    def working(self, image: torch.Tensor) -> torch.Tensor:
+        """Convert an RGB image to the space being optimised (luminance or RGB)."""
+        return luminance(image) if self.channels == 1 else image
+
+    def compose(self, working: torch.Tensor) -> torch.Tensor:
+        """Turn an optimised working image into the final RGB image in ``[0, 1]``."""
+        if self.channels == 1:
+            return preserve_colors(working, self.content)
+        return working.clamp(0, 1)
+
+    def _network_input(self, image: torch.Tensor) -> torch.Tensor:
+        return image.expand(-1, 3, -1, -1) if image.shape[1] == 1 else image
+
+    def _prepare_style(self, style: torch.Tensor, content_pixels: int) -> torch.Tensor:
+        # Gram matrices are averages over positions, so style images keep their own aspect
+        # ratio; they are resized to the content's pixel count rather than to its shape.
+        style = resize_to_area(style, content_pixels)
+        if self.config.color == "match":
+            return match_color(style, self.content, self.config.color_match).clamp(0, 1)
+        if self.config.color == "luminance":
+            return match_luminance(luminance(style), luminance(self.content)).clamp(0, 1)
+        return style
+
     def __call__(self, image: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Return the weighted total loss of ``image`` and its weighted parts."""
         cfg = self.config
         assert cfg.content_weight is not None and cfg.style_weight is not None
-        if tuple(image.shape[1:]) != tuple(self.content.shape[1:]):
+        expected = (self.channels, *self.content.shape[-2:])
+        if tuple(image.shape[1:]) != expected:
             raise ValueError(
-                f"expected an image of shape {tuple(self.content.shape)}, got {tuple(image.shape)}"
+                f"expected an image of shape (1, {', '.join(map(str, expected))}), got {tuple(image.shape)}"
             )
-        features = self.extractor(image)
+        features = self.extractor(self._network_input(image))
         zero = image.new_zeros(())
         content = sum(
             (F.mse_loss(features[name], target) for name, target in self.content_targets.items()), zero
@@ -285,7 +321,7 @@ def _fit_mask(mask: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
 
 
 def _initial_image(objective: Objective, seed: int) -> torch.Tensor:
-    content = objective.content
+    content = objective.working(objective.content)
     if objective.config.init == "content":
         return content.clone()
     generator = torch.Generator().manual_seed(seed)
@@ -334,7 +370,7 @@ def _optimise(
         history.append(record)
         if on_progress is not None:
             with torch.no_grad():
-                on_progress(record, image.detach().clamp(0, 1))
+                on_progress(record, objective.compose(image.detach().clamp(0, 1)))
     with torch.no_grad():
         image.clamp_(0, 1)
     return image.detach(), history
@@ -365,5 +401,8 @@ def stylize(
         objective, _initial_image(objective, cfg.seed), cfg.steps, started, on_progress
     )
     return TransferResult(
-        image=working, history=tuple(history), config=cfg, seconds=time.perf_counter() - started
+        image=objective.compose(working),
+        history=tuple(history),
+        config=cfg,
+        seconds=time.perf_counter() - started,
     )

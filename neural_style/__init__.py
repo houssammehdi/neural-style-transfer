@@ -2,7 +2,7 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .color import preserve_colors
+from .color import match_color, match_luminance, preserve_colors
 from .image import load_image, load_mask, resize, save_image
 from .layers import VGG19_LAYERS
 from .losses import gram_matrix, guided_gram_matrix, total_variation
@@ -30,6 +30,8 @@ __all__ = [
     "load_image",
     "load_mask",
     "load_vgg19",
+    "match_color",
+    "match_luminance",
     "preserve_colors",
     "resize",
     "save_image",
