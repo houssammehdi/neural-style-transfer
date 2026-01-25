@@ -1,7 +1,7 @@
 """Image and mask I/O plus aspect-preserving resizing.
 
-Images are ``(1, 3, H, W)`` float tensors in ``[0, 1]``. An integer
-``size`` always means the *shorter* edge in
+Images are ``(1, 3, H, W)`` float tensors in ``[0, 1]``; masks are
+``(1, 1, H, W)``. An integer ``size`` always means the *shorter* edge in
 pixels, with the aspect ratio preserved; a ``(height, width)`` tuple forces an
 exact shape.
 """
@@ -61,6 +61,13 @@ def load_image(
     the file's resolution. Resampling uses Lanczos filtering.
     """
     return _to_tensor(_open(path, "RGB", size), device)
+
+
+def load_mask(
+    path: str | Path, size: Size | None = None, device: torch.device | str | None = None
+) -> torch.Tensor:
+    """Load a greyscale guidance mask as ``(1, 1, H, W)`` in ``[0, 1]`` (white = inside)."""
+    return _to_tensor(_open(path, "L", size), device)
 
 
 def to_pil_image(tensor: torch.Tensor) -> Image.Image:

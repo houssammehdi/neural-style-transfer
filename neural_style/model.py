@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal, get_args
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from .layers import VGG19_BLOCK_DEPTHS, VGG19_LAYERS, VGG19_WIDTHS
@@ -234,4 +235,28 @@ class FeatureExtractor(nn.Module):
             x = module(x)
             if name in self.layers:
                 out[name] = x
+        return out
+
+    def downsample(self, masks: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Bring guidance masks ``(B, R, H, W)`` to the resolution of each requested layer.
+
+        The masks follow the network's own spatial structure: 3x3 convolutions
+        with padding 1 keep the size, and every pooling layer is mirrored by an
+        average pooling with the same kernel, stride and rounding. The result
+        therefore has exactly the shape of each feature map (odd sizes
+        included), and masks that sum to one at every pixel keep doing so.
+        """
+        out: dict[str, torch.Tensor] = {}
+        m = masks
+        for name, module in self.body.named_children():
+            if isinstance(module, (nn.MaxPool2d, nn.AvgPool2d)):
+                m = F.avg_pool2d(
+                    m,
+                    kernel_size=module.kernel_size,
+                    stride=module.stride,
+                    padding=module.padding,
+                    ceil_mode=module.ceil_mode,
+                )
+            if name in self.layers:
+                out[name] = m
         return out

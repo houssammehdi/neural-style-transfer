@@ -8,7 +8,7 @@ import pytest
 import torch
 from PIL import Image
 
-from neural_style import load_image, resize, save_image
+from neural_style import load_image, load_mask, resize, save_image
 from neural_style.image import area_shape, resize_to_area, target_shape, to_pil_image
 
 
@@ -39,6 +39,12 @@ def test_exif_orientation_is_applied(tmp_path: Path) -> None:
     assert loaded.shape == (1, 3, 40, 20)  # displayed upright: portrait
     assert loaded[0, 0, :, -3:].mean() > 0.8  # the stripe is now on the right edge
     assert loaded[0, 0, :, :3].mean() < 0.2
+
+
+def test_masks_load_as_single_channel(tmp_path: Path) -> None:
+    Image.new("L", (8, 4), 255).save(tmp_path / "mask.png")
+    mask = load_mask(tmp_path / "mask.png", (2, 4))
+    assert mask.shape == (1, 1, 2, 4) and torch.all(mask == 1)
 
 
 def test_resize_to_area_preserves_the_aspect_ratio() -> None:

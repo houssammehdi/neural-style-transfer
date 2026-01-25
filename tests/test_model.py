@@ -1,4 +1,4 @@
-"""VGG-19 layout, input normalisation and feature extraction."""
+"""VGG-19 layout, normalisation variants, feature extraction and mask downsampling."""
 
 from __future__ import annotations
 
@@ -6,12 +6,16 @@ import urllib.error
 
 import pytest
 import torch
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from torch import nn
 from torchvision.models import VGG19_Weights
 from torchvision.models.vgg import cfgs, make_layers
 
 from neural_style import VGG19, VGG19_LAYERS, FeatureExtractor, WeightsUnavailableError, load_vgg19
 from neural_style.model import Normalization, make_vgg19_features
+
+ALL_BLOCKS = ("relu1_1", "pool1", "relu2_1", "relu3_1", "relu4_2", "pool4", "relu5_1")
 
 
 def test_layer_names_follow_the_vgg_convention() -> None:
@@ -132,3 +136,34 @@ def test_average_pooling_replaces_max_pooling(vgg: VGG19) -> None:
     pools = [m for m in extractor.body if isinstance(m, (nn.MaxPool2d, nn.AvgPool2d))]
     assert len(pools) == 2 and all(isinstance(p, nn.AvgPool2d) for p in pools)
     assert any(isinstance(m, nn.MaxPool2d) for m in vgg.features)  # the shared network is untouched
+
+
+@pytest.mark.parametrize(("height", "width"), [(32, 32), (37, 53), (17, 29), (65, 40)])
+def test_downsampled_masks_have_the_feature_map_shapes(vgg: VGG19, height: int, width: int) -> None:
+    extractor = FeatureExtractor(vgg, ALL_BLOCKS)
+    features = extractor(torch.rand(1, 3, height, width))
+    masks = extractor.downsample(torch.rand(1, 2, height, width))
+    assert set(masks) == set(features)
+    for name in ALL_BLOCKS:
+        assert masks[name].shape[-2:] == features[name].shape[-2:], name
+        assert masks[name].shape[:2] == (1, 2)
+
+
+@settings(max_examples=25, deadline=None)
+@given(seed=st.integers(0, 10_000), height=st.integers(16, 48), width=st.integers(16, 48))
+def test_downsampling_keeps_a_partition_of_unity(seed: int, height: int, width: int) -> None:
+    vgg = load_vgg19("random")
+    extractor = FeatureExtractor(vgg, ("relu1_1", "relu2_1", "relu3_1", "relu4_1"))
+    raw = torch.rand((1, 3, height, width), generator=torch.Generator().manual_seed(seed))
+    masks = raw / raw.sum(dim=1, keepdim=True)  # three soft regions covering every pixel
+    for name, m in extractor.downsample(masks).items():
+        torch.testing.assert_close(m.sum(dim=1), torch.ones_like(m[:, 0]), msg=name)
+        assert m.min() >= 0 and m.max() <= 1
+
+
+def test_block_aligned_masks_downsample_exactly(vgg: VGG19) -> None:
+    mask = torch.zeros(1, 1, 32, 64)
+    mask[..., :32] = 1  # left half, aligned with every 2x2 pooling window
+    down = FeatureExtractor(vgg, ["relu5_1"]).downsample(mask)["relu5_1"]  # after four poolings
+    assert down.shape == (1, 1, 2, 4)
+    assert torch.equal(down, torch.tensor([[[[1.0, 1.0, 0.0, 0.0], [1.0, 1.0, 0.0, 0.0]]]]))

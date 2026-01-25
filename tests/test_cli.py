@@ -15,10 +15,14 @@ from neural_style import WeightsUnavailableError, __version__, cli
 def pictures(tmp_path: Path) -> dict[str, Path]:
     g = torch.Generator().manual_seed(0)
     paths = {}
-    for name, (w, h) in {"content": (36, 24), "style": (30, 40)}.items():
+    for name, (w, h) in {"content": (36, 24), "style": (30, 40), "style2": (20, 20)}.items():
         pixels = (torch.rand((h, w, 3), generator=g) * 255).to(torch.uint8).numpy()
         paths[name] = tmp_path / f"{name}.png"
         Image.fromarray(pixels).save(paths[name])
+    mask = Image.new("L", (36, 24), 0)
+    mask.paste(255, (0, 0, 18, 24))
+    paths["mask"] = tmp_path / "mask.png"
+    mask.save(paths["mask"])
     return paths
 
 
@@ -40,9 +44,24 @@ def test_end_to_end_run_writes_the_image_and_frames(pictures: dict[str, Path], t
     assert frames == ["result.jpg", "result_0002.jpg", "result_0004.jpg"]
 
 
+def test_spatial_control_with_masks(pictures: dict[str, Path], tmp_path: Path) -> None:
+    out = tmp_path / "masked.png"
+    argv = [str(pictures["content"]), str(pictures["style"]), str(pictures["style2"]), "-o", str(out)]
+    argv += ["--weights", "random", "--size", "16", "--steps", "2", "--device", "cpu"]
+    argv += ["--masks", str(pictures["mask"]), str(pictures["mask"]), "--pooling", "avg"]
+    argv += ["--style-layers", "relu1_1", "relu2_1", "--content-layers", "relu2_2"]
+    assert cli.main(argv) == 0
+    with Image.open(out) as img:
+        assert img.size == (24, 16)
+
+
 @pytest.mark.parametrize(
     ("extra", "message"),
-    [(["--blend", "1", "2"], "one weight per style"), (["--style-weight", "-1"], "non-negative")],
+    [
+        (["--blend", "1", "2"], "one weight per style"),
+        (["--masks", "a.png", "b.png"], "one mask per style"),
+        (["--style-weight", "-1"], "non-negative"),
+    ],
 )
 def test_invalid_arguments_exit_with_usage_errors(
     pictures: dict[str, Path], capsys: pytest.CaptureFixture[str], extra: list[str], message: str

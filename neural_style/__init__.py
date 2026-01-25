@@ -1,11 +1,11 @@
-"""Neural style transfer with PyTorch and VGG-19, after Gatys et al. (2016)."""
+"""Neural style transfer with PyTorch and VGG-19, after Gatys et al. (2016, 2017)."""
 
 from importlib.metadata import PackageNotFoundError, version
 
 from .color import preserve_colors
-from .image import load_image, resize, save_image
+from .image import load_image, load_mask, resize, save_image
 from .layers import VGG19_LAYERS
-from .losses import gram_matrix, total_variation
+from .losses import gram_matrix, guided_gram_matrix, total_variation
 from .model import VGG19, FeatureExtractor, WeightsUnavailableError, load_vgg19
 from .transfer import PRESETS, LossRecord, Objective, TransferConfig, TransferResult, stylize
 
@@ -26,7 +26,9 @@ __all__ = [
     "WeightsUnavailableError",
     "__version__",
     "gram_matrix",
+    "guided_gram_matrix",
     "load_image",
+    "load_mask",
     "load_vgg19",
     "preserve_colors",
     "resize",

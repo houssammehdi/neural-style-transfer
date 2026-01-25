@@ -12,7 +12,7 @@ import torch
 
 from . import __version__
 from .color import preserve_colors
-from .image import load_image, save_image
+from .image import load_image, load_mask, save_image
 from .model import WEIGHT_SOURCES, Pooling, WeightsUnavailableError, load_vgg19
 from .transfer import InitName, LossRecord, OptimizerName, TransferConfig, stylize
 
@@ -56,6 +56,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--pooling", choices=get_args(Pooling), help="max or avg (default: preset)")
     p.add_argument("--blend", type=float, nargs="+", help="weight of each style image")
+    p.add_argument(
+        "--masks",
+        type=Path,
+        nargs="+",
+        help="spatial control: one greyscale mask per style image; style i is applied where mask i is white",
+    )
     p.add_argument("--preserve-colors", action="store_true", help="keep the content image's colours")
     p.add_argument("--optimizer", choices=get_args(OptimizerName), default="lbfgs")
     p.add_argument("--lr", type=float, default=0.02, help="learning rate (adam only)")
@@ -74,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.blend is not None and len(args.blend) != len(args.styles):
         parser.error("--blend needs exactly one weight per style image")
+    if args.masks is not None and len(args.masks) != len(args.styles):
+        parser.error("--masks needs exactly one mask per style image")
     try:
         config = TransferConfig(
             steps=args.steps,
@@ -100,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     content = load_image(args.content, args.size or (512 if device.type != "cpu" else 256), device)
     styles = [load_image(path, None, device) for path in args.styles]
+    masks = [load_mask(path, None, device) for path in args.masks] if args.masks else None
 
     def report(record: LossRecord, image: torch.Tensor) -> None:
         if record.step == 1 or record.step % 50 == 0 or record.step == config.steps:
@@ -114,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"device={device} weights={args.weights} size={tuple(content.shape[-2:])} styles={len(styles)}")
     started = time.perf_counter()
     try:
-        result = stylize(vgg, content, styles, config, on_progress=report)
+        result = stylize(vgg, content, styles, config, masks=masks, on_progress=report)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

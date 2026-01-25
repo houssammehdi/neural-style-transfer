@@ -22,6 +22,8 @@ installable package with a CLI.
 - Canonical VGG-19 layer names (`conv4_2`, `relu3_1`, `pool2`, …); defaults: content `conv2_2`,
   style `conv1_1…conv3_1` (the PyTorch tutorial's choice), all configurable
 - **Multi-style blending** — interpolate between several paintings with `--blend`
+- **Spatial control** — `--masks` applies each style to its own region, with guided Gram matrices
+  (Gatys et al., CVPR 2017)
 - **Colour preservation** — keep the photo's colours (a post-hoc YIQ luminance swap)
 - Total-variation regularisation against high-frequency noise
 - L-BFGS (fast convergence) or Adam (lower memory, works well on Apple MPS)

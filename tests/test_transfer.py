@@ -1,4 +1,4 @@
-"""The objective and the optimisation loop."""
+"""The objective (with and without spatial control) and the optimisation loop."""
 
 from __future__ import annotations
 
@@ -7,7 +7,17 @@ import dataclasses
 import pytest
 import torch
 
-from neural_style import PRESETS, VGG19, LossRecord, Objective, TransferConfig, stylize
+from neural_style import (
+    PRESETS,
+    VGG19,
+    FeatureExtractor,
+    LossRecord,
+    Objective,
+    TransferConfig,
+    gram_matrix,
+    guided_gram_matrix,
+    stylize,
+)
 
 
 def _images(seed: int, *shapes: tuple[int, int]) -> list[torch.Tensor]:
@@ -76,10 +86,78 @@ def test_objective_validates_its_inputs(vgg: VGG19) -> None:
     content, style = _images(10, (16, 16), (16, 16))
     with pytest.raises(ValueError, match=r"shape \(1, 3, 16, 16\)"):
         Objective(vgg, content, [style])(torch.rand(1, 3, 16, 17))
+    with pytest.raises(ValueError, match="one guidance channel per style"):
+        Objective(vgg, content, [style, style], masks=[torch.ones(1, 1, 4, 4)])
     with pytest.raises(ValueError, match="one weight per style"):
         Objective(vgg, content, [style], TransferConfig(style_blend=(1.0, 2.0)))
+    with pytest.raises(ValueError, match=r"\[0, 1\]"):
+        Objective(vgg, content, [style], masks=[torch.full((1, 1, 4, 4), 2.0)])
+    with pytest.raises(ValueError, match="need masks"):
+        Objective(vgg, content, [style], style_masks=[None])
     with pytest.raises(ValueError, match="at least one style"):
         Objective(vgg, content, [])
+
+
+def test_a_full_mask_is_the_same_as_no_mask(vgg: VGG19) -> None:
+    content, style, image = _images(7, (32, 40), (24, 24), (32, 40))
+    config = TransferConfig()
+    plain, _ = Objective(vgg, content, [style], config)(image)
+    masked, _ = Objective(vgg, content, [style], config, masks=[torch.ones(1, 1, 8, 10)])(image)
+    torch.testing.assert_close(masked, plain)
+
+
+def test_style_gradient_stays_inside_the_mask(vgg: VGG19) -> None:
+    # With only relu1_1 (3x3 receptive field) the style loss of a region can only move pixels
+    # within one pixel of that region.
+    content, style, image = _images(8, (24, 24), (24, 24), (24, 24))
+    mask = torch.zeros(1, 1, 24, 24)
+    mask[..., :, :8] = 1
+    config = TransferConfig(
+        style_layers=("relu1_1",), content_layers=(), content_weight=0.0, style_weight=1.0
+    )
+    objective = Objective(vgg, content, [style], config, masks=[mask])
+    image.requires_grad_(True)
+    total, _ = objective(image)
+    torch.autograd.backward(total)
+    assert image.grad is not None
+    assert image.grad[..., :, :8].abs().sum() > 0
+    assert torch.all(image.grad[..., :, 9:] == 0)
+
+
+def test_region_style_terms_are_weighted_by_their_share_of_the_image(vgg: VGG19) -> None:
+    # Weighting a region by its area keeps the per-pixel balance between content and style
+    # independent of how large the region is (docs/method.md, "Spatial control").
+    content, style, image = _images(9, (32, 32), (32, 32), (32, 32))
+    left = torch.zeros(1, 1, 32, 32)
+    left[..., :8] = 1  # a quarter of the image, aligned with the pooling grid
+    config = TransferConfig(
+        style_layers=("relu1_1",), content_layers=(), content_weight=0.0, style_weight=1.0
+    )
+    _, parts = Objective(vgg, content, [style], config, masks=[left])(image)
+    extractor = FeatureExtractor(vgg, ["relu1_1"])
+    target = gram_matrix(extractor(style)["relu1_1"])
+    guided = guided_gram_matrix(extractor(image)["relu1_1"], left)
+    torch.testing.assert_close(parts["style"], 0.25 * torch.nn.functional.mse_loss(guided, target))
+
+
+def test_style_masks_restrict_the_style_statistics(vgg: VGG19) -> None:
+    content = _images(11, (16, 32))[0]
+    half_red = torch.zeros(1, 3, 16, 32)
+    half_red[:, 0, :, :16] = 1  # left half red, right half black
+    left = torch.zeros(1, 1, 16, 32)
+    left[..., :16] = 1
+    red = torch.zeros(1, 3, 16, 32)
+    red[:, 0] = 1
+    config = TransferConfig(content_weight=0.0, style_layers=("relu1_1", "relu2_1"))
+    full = torch.ones(1, 1, 16, 32)
+
+    def style_loss(**kwargs: list[torch.Tensor]) -> float:
+        _, parts = Objective(vgg, content, [half_red], config, masks=[full], **kwargs)(red)
+        return float(parts["style"])
+
+    # A red image matches the red half of the style far better than the whole style image.
+    assert style_loss(style_masks=[left]) < 0.1 * style_loss()
+    assert style_loss(style_masks=[torch.ones(1, 1, 16, 32)]) == pytest.approx(style_loss(), rel=1e-5)
 
 
 def test_blending_styles_of_different_sizes(vgg: VGG19) -> None:

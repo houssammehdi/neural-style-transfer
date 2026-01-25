@@ -1,7 +1,9 @@
 """The optimisation that performs style transfer.
 
 The synthesised image's pixels are the only parameters; VGG-19 stays frozen.
-The objective is ``alpha * L_content + beta * L_style + gamma * TV``.
+The objective is ``alpha * L_content + beta * L_style + gamma * TV``, where the
+style term optionally uses guided Gram matrices so that different styles apply
+to different regions (Gatys et al., 2017).
 """
 
 from __future__ import annotations
@@ -14,8 +16,8 @@ from typing import Literal, get_args
 import torch
 import torch.nn.functional as F
 
-from .image import resize_to_area
-from .losses import gram_matrix, total_variation
+from .image import resize, resize_to_area
+from .losses import gram_matrix, guided_gram_matrix, total_variation
 from .model import VGG19, FeatureExtractor, Pooling
 
 OptimizerName = Literal["lbfgs", "adam"]
@@ -66,8 +68,10 @@ class TransferConfig:
     ``None`` for the layers, the content/style weights or the pooling means
     "use the :data:`PRESETS` entry of the network's weight source".
 
-    ``style_blend`` weights the style images: they are normalised and the
-    Gram matrices averaged, which interpolates between styles.
+    ``style_blend`` weights the style images. Without masks they are normalised
+    and their Gram matrices averaged, which interpolates between styles. With
+    masks each style owns one region and its weight scales that region's style
+    strength (default 1 each).
     """
 
     steps: int = 300
@@ -152,10 +156,15 @@ ProgressFn = Callable[[LossRecord, torch.Tensor], None]
 
 
 class Objective:
-    """The style-transfer loss for one content image and its style targets.
+    """The style-transfer loss for one content image, its style targets and optional masks.
 
     Targets are computed once at construction. Calling the objective on a
     candidate image returns the weighted total and its parts.
+
+    ``masks`` (one ``(1, 1, h, w)`` guidance channel per style, any size)
+    switch on spatial control: style ``r`` is matched with guided Gram
+    matrices inside ``masks[r]`` only. ``style_masks`` optionally restrict
+    which part of each style image provides the statistics.
     """
 
     def __init__(
@@ -164,6 +173,9 @@ class Objective:
         content: torch.Tensor,
         styles: Sequence[torch.Tensor],
         config: TransferConfig | None = None,
+        *,
+        masks: Sequence[torch.Tensor] | None = None,
+        style_masks: Sequence[torch.Tensor | None] | None = None,
     ) -> None:
         cfg = (config or TransferConfig()).resolved(vgg.source)
         assert cfg.content_layers is not None and cfg.style_layers is not None and cfg.pooling is not None
@@ -171,6 +183,10 @@ class Objective:
             raise ValueError("at least one style image is required")
         if cfg.style_blend is not None and len(cfg.style_blend) != len(styles):
             raise ValueError("style_blend needs exactly one weight per style image")
+        if masks is not None and len(masks) != len(styles):
+            raise ValueError("masks need exactly one guidance channel per style image")
+        if style_masks is not None and (masks is None or len(style_masks) != len(styles)):
+            raise ValueError("style_masks need masks, and one entry per style image")
         if not cfg.style_layers and not cfg.content_layers:
             raise ValueError("at least one content or style layer is required")
 
@@ -191,14 +207,40 @@ class Objective:
             self.style_shapes = [(s.shape[-2], s.shape[-1]) for s in prepared]
             style_features = [self.extractor(s) for s in prepared]
             blend = cfg.style_blend or (1.0,) * len(styles)
-            total = sum(blend)
-            self.style_targets = {
-                name: sum(
-                    (w / total * gram_matrix(f[name]) for w, f in zip(blend, style_features, strict=True)),
-                    torch.zeros(()),
-                )
-                for name in cfg.style_layers
-            }
+
+            # One (weight, masks-per-layer, targets-per-layer) entry per region.
+            self.regions: list[tuple[float, dict[str, torch.Tensor] | None, dict[str, torch.Tensor]]] = []
+            if masks is None:
+                total = sum(blend)
+                targets = {
+                    name: sum(
+                        (
+                            w / total * gram_matrix(f[name])
+                            for w, f in zip(blend, style_features, strict=True)
+                        ),
+                        torch.zeros(()),
+                    )
+                    for name in cfg.style_layers
+                }
+                self.regions.append((1.0, None, targets))
+            else:
+                guidance = torch.cat([_fit_mask(m, (height, width)) for m in masks], dim=1)
+                per_layer = self.extractor.downsample(guidance)
+                for r, (weight, feats, style) in enumerate(zip(blend, style_features, prepared, strict=True)):
+                    style_mask = style_masks[r] if style_masks is not None else None
+                    style_layers = (
+                        self.extractor.downsample(_fit_mask(style_mask, (style.shape[-2], style.shape[-1])))
+                        if style_mask is not None
+                        else None
+                    )
+                    targets = {
+                        name: gram_matrix(feats[name])
+                        if style_layers is None
+                        else guided_gram_matrix(feats[name], style_layers[name])
+                        for name in cfg.style_layers
+                    }
+                    region = {name: per_layer[name][:, r : r + 1] for name in cfg.style_layers}
+                    self.regions.append((weight, region, targets))
 
     def __call__(self, image: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Return the weighted total loss of ``image`` and its weighted parts."""
@@ -213,10 +255,18 @@ class Objective:
         content = sum(
             (F.mse_loss(features[name], target) for name, target in self.content_targets.items()), zero
         )
-        style = sum(
-            (F.mse_loss(gram_matrix(features[name]), target) for name, target in self.style_targets.items()),
-            zero,
-        )
+        style = zero
+        for weight, region, targets in self.regions:
+            for name, target in targets.items():
+                if region is None:
+                    style = style + weight * F.mse_loss(gram_matrix(features[name]), target)
+                else:
+                    mask = region[name]
+                    # Weighting by the region's share of the image keeps the per-pixel
+                    # balance between content and style independent of region size.
+                    share = mask.square().mean()
+                    gram = guided_gram_matrix(features[name], mask)
+                    style = style + weight * share * F.mse_loss(gram, target)
         tv = total_variation(image) if cfg.tv_weight > 0 else zero
         parts = {
             "content": cfg.content_weight * content,
@@ -224,6 +274,14 @@ class Objective:
             "tv": cfg.tv_weight * tv,
         }
         return parts["content"] + parts["style"] + parts["tv"], parts
+
+
+def _fit_mask(mask: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
+    if mask.dim() != 4 or mask.shape[:2] != (1, 1):
+        raise ValueError(f"a mask must have shape (1, 1, H, W), got {tuple(mask.shape)}")
+    if mask.min() < 0 or mask.max() > 1:
+        raise ValueError("mask values must lie in [0, 1]")
+    return resize(mask, shape, mode="bilinear").clamp(0, 1)
 
 
 def _initial_image(objective: Objective, seed: int) -> torch.Tensor:
@@ -288,17 +346,20 @@ def stylize(
     styles: Sequence[torch.Tensor],
     config: TransferConfig | None = None,
     *,
+    masks: Sequence[torch.Tensor] | None = None,
+    style_masks: Sequence[torch.Tensor | None] | None = None,
     on_progress: ProgressFn | None = None,
 ) -> TransferResult:
     """Optimise an image so its VGG-19 features match ``content`` and ``styles``.
 
     ``content`` fixes the output resolution; style images may have any size and
-    aspect ratio (they are resized to the content's pixel count).
+    aspect ratio (they are resized to the content's pixel count). ``masks``
+    enables spatial control (see :class:`Objective`).
 
     L-BFGS converges in far fewer steps than Adam here; Adam uses less memory.
     """
     started = time.perf_counter()
-    objective = Objective(vgg, content, styles, config)
+    objective = Objective(vgg, content, styles, config, masks=masks, style_masks=style_masks)
     cfg = objective.config
     working, history = _optimise(
         objective, _initial_image(objective, cfg.seed), cfg.steps, started, on_progress
