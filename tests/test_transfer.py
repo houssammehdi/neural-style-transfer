@@ -40,6 +40,22 @@ def test_stylize_reduces_the_loss(vgg: VGG19, optimizer: str) -> None:
     assert [r.step for r in result.history] == list(range(1, 16))
 
 
+def test_lbfgs_line_search_never_increases_the_loss(vgg: VGG19) -> None:
+    content, style = _images(20, (32, 32), (32, 32))
+    config = TransferConfig(steps=6, line_search=True, init="noise")
+    history = stylize(vgg, content, [style], config).history
+    totals = [r.total for r in history]
+    assert all(b <= a * (1 + 1e-6) for a, b in zip(totals, totals[1:], strict=False)), totals
+    assert sum(r.evaluations for r in history) > len(history)  # the search used extra evaluations
+    plain = stylize(vgg, content, [style], TransferConfig(steps=6, init="noise")).history
+    assert all(r.evaluations == 1 for r in plain)
+
+
+def test_line_search_is_only_for_lbfgs() -> None:
+    with pytest.raises(ValueError, match="L-BFGS"):
+        TransferConfig(optimizer="adam", line_search=True)
+
+
 def test_history_belongs_to_the_run_not_the_config(vgg: VGG19) -> None:
     # Regression: v0.1 appended to a mutable list on the config, so reusing it mixed runs.
     content, style = _images(2, (24, 24), (24, 24))

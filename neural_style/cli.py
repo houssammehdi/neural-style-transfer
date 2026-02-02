@@ -88,6 +88,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--color-match", choices=get_args(ColorMatchMethod), default="eigen")
     p.add_argument("--style-scale", type=float, default=1.0, help="style image size relative to the content")
     p.add_argument("--optimizer", choices=get_args(OptimizerName), default="lbfgs")
+    p.add_argument(
+        "--line-search",
+        action="store_true",
+        help="strong-Wolfe line search for L-BFGS (monotone, ~2x evaluations)",
+    )
     p.add_argument("--lr", type=float, default=0.02, help="learning rate (adam only)")
     p.add_argument("--init", choices=get_args(InitName), default="content")
     p.add_argument("--save-every", type=int, default=0, help="also write intermediate frames every N steps")
@@ -124,6 +129,7 @@ def main(argv: list[str] | None = None) -> int:
             style_layers=tuple(args.style_layers) if args.style_layers else None,
             pooling=args.pooling,
             optimizer=args.optimizer,
+            line_search=args.line_search,
             lr=args.lr,
             init=args.init,
             style_blend=tuple(args.blend) if args.blend else None,

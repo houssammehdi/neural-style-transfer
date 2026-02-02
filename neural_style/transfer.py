@@ -83,6 +83,12 @@ class TransferConfig:
     ``style_scale`` sets the style images' size relative to the content: they
     are resized, aspect ratio preserved, to ``style_scale**2`` times the content
     image's pixel count.
+
+    ``line_search`` gives L-BFGS a strong-Wolfe line search. Without it (the
+    default, as in the reference implementations) every step costs one loss
+    evaluation, but the first quasi-Newton steps can overshoot before the
+    curvature estimate settles; with it the loss decreases at every step at
+    the price of about two evaluations per step (``docs/method.md``).
     """
 
     steps: int = 300
@@ -93,6 +99,7 @@ class TransferConfig:
     style_layers: tuple[str, ...] | None = None
     pooling: Pooling | None = None
     optimizer: OptimizerName = "lbfgs"
+    line_search: bool = False
     lr: float = 0.02
     init: InitName = "content"
     style_blend: tuple[float, ...] | None = None
@@ -120,6 +127,8 @@ class TransferConfig:
                 raise ValueError(f"{name} must be non-negative")
         if self.lr <= 0 or self.style_scale <= 0:
             raise ValueError("lr and style_scale must be positive")
+        if self.line_search and self.optimizer != "lbfgs":
+            raise ValueError("line_search applies to the L-BFGS optimizer only")
         if self.style_blend is not None and (
             any(w < 0 for w in self.style_blend) or sum(self.style_blend) <= 0
         ):
@@ -155,6 +164,8 @@ class LossRecord:
     """Seconds from the start of the synthesis (target computation included) to this evaluation."""
     scale: int = 0
     """Index of the resolution in a coarse-to-fine run (0 for single-scale)."""
+    evaluations: int = 1
+    """Loss evaluations this step used (more than one only with the L-BFGS line search)."""
 
 
 @dataclass(frozen=True)
@@ -337,10 +348,19 @@ def _initial_image(objective: Objective, init: torch.Tensor | None, seed: int) -
     return torch.rand(content.shape, generator=generator).to(content.device)
 
 
+LINE_SEARCH_EVALUATIONS = 20
+"""Most function evaluations one L-BFGS step may spend in its strong-Wolfe line search."""
+
+
 def _make_optimizer(config: TransferConfig, image: torch.Tensor) -> torch.optim.Optimizer:
     if config.optimizer == "adam":
         return torch.optim.Adam([image], lr=config.lr)
-    # One function evaluation per step; the curvature pairs persist across steps.
+    # One iteration per step; the curvature pairs persist across steps. Without a line
+    # search every step costs exactly one evaluation (as in the reference implementations).
+    if config.line_search:
+        return torch.optim.LBFGS(
+            [image], max_iter=1, max_eval=LINE_SEARCH_EVALUATIONS, line_search_fn="strong_wolfe"
+        )
     return torch.optim.LBFGS([image], max_iter=1)
 
 
@@ -357,18 +377,21 @@ def _optimise(
     history: list[LossRecord] = []
     for step in range(1, steps + 1):
         parts: dict[str, float] = {}
+        evaluations: list[int] = []
 
-        def closure(parts: dict[str, float] = parts) -> float:
-            with torch.no_grad():
-                image.clamp_(0, 1)
+        def closure(parts: dict[str, float] = parts, evaluations: list[int] = evaluations) -> float:
             optimizer.zero_grad()
             total, terms = objective(image)
             torch.autograd.backward(total)
-            parts.update({k: float(v.detach()) for k, v in terms.items()}, total=float(total.detach()))
-            parts["elapsed"] = time.perf_counter() - started
-            return parts["total"]
+            if not evaluations:  # the first evaluation of a step is at the current iterate
+                parts.update({k: float(v.detach()) for k, v in terms.items()}, total=float(total.detach()))
+                parts["elapsed"] = time.perf_counter() - started
+            evaluations.append(1)
+            return float(total.detach())
 
         optimizer.step(closure)
+        with torch.no_grad():
+            image.clamp_(0, 1)  # project back onto valid pixel values after every step
         record = LossRecord(
             step=step,
             total=parts["total"],
@@ -377,13 +400,12 @@ def _optimise(
             tv=parts["tv"],
             elapsed=parts["elapsed"],
             scale=scale,
+            evaluations=len(evaluations),
         )
         history.append(record)
         if on_progress is not None:
             with torch.no_grad():
-                on_progress(record, objective.compose(image.detach().clamp(0, 1)))
-    with torch.no_grad():
-        image.clamp_(0, 1)
+                on_progress(record, objective.compose(image.detach()))
     return image.detach(), history
 
 
