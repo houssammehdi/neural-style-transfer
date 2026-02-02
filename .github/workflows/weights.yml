@@ -1,0 +1,28 @@
+name: Pretrained weights
+
+# Optional job: it downloads the 80 MB Caffe VGG-19 release asset and the example images from
+# GitHub, so it never runs on pushes or pull requests - only on demand and once a month, to
+# notice if an upstream file moves or no longer matches its pinned SHA-256.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 3 * *"
+
+jobs:
+  caffe-weights:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install (CPU-only PyTorch)
+        run: |
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[caffe]"
+      - run: python scripts/fetch_examples.py
+      - run: python scripts/check_caffe_weights.py
+      - name: Stylise a small image with the real weights
+        run: >
+          python -m neural_style examples/inputs/chelsea.png examples/inputs/starry_night.jpg
+          --weights caffe --size 64 --steps 5 --line-search -o out.jpg
