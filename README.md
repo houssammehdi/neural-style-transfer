@@ -24,6 +24,8 @@ installable package with a CLI.
 - **Multi-style blending** — interpolate between several paintings with `--blend`
 - **Spatial control** — `--masks` applies each style to its own region, with guided Gram matrices
   (Gatys et al., CVPR 2017)
+- **Scale control** — coarse-to-fine synthesis (`--size 256 512 --steps 300 100`) for higher
+  resolutions at lower cost, and `--style-scale` for the size of the brush strokes
 - **Colour control** (Gatys et al., 2016) — `--color luminance` transfers style on the luminance
   channel only and keeps the photo's colours; `--color match` first recolours the painting to the
   photo's colour mean and covariance (`--color-match eigen|cholesky`)

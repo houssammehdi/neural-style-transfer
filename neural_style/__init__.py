@@ -7,7 +7,15 @@ from .image import load_image, load_mask, resize, save_image
 from .layers import VGG19_LAYERS
 from .losses import gram_matrix, guided_gram_matrix, total_variation
 from .model import VGG19, FeatureExtractor, WeightsUnavailableError, load_vgg19
-from .transfer import PRESETS, LossRecord, Objective, TransferConfig, TransferResult, stylize
+from .transfer import (
+    PRESETS,
+    LossRecord,
+    Objective,
+    TransferConfig,
+    TransferResult,
+    stylize,
+    stylize_multiscale,
+)
 
 try:
     __version__ = version("neural-style")
@@ -36,5 +44,6 @@ __all__ = [
     "resize",
     "save_image",
     "stylize",
+    "stylize_multiscale",
     "total_variation",
 ]

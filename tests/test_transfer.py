@@ -1,4 +1,4 @@
-"""The objective (with and without spatial control) and the optimisation loop."""
+"""The objective and the optimisation loop, single-scale and coarse-to-fine."""
 
 from __future__ import annotations
 
@@ -17,8 +17,10 @@ from neural_style import (
     gram_matrix,
     guided_gram_matrix,
     stylize,
+    stylize_multiscale,
 )
 from neural_style.color import rgb_to_yiq, yiq_to_rgb
+from neural_style.image import resize
 
 
 def _images(seed: int, *shapes: tuple[int, int]) -> list[torch.Tensor]:
@@ -65,6 +67,7 @@ def test_presets_follow_the_weight_source() -> None:
         {"steps": 0},
         {"style_weight": -1.0},
         {"lr": 0.0},
+        {"style_scale": 0.0},
         {"style_blend": (1.0, -1.0)},
         {"style_blend": (0.0, 0.0)},
         {"optimizer": "sgd"},
@@ -81,7 +84,9 @@ def test_style_images_keep_their_aspect_ratio(vgg: VGG19) -> None:
     # Style images are resized to the content's pixel count, never stretched to its shape.
     content, style = _images(3, (40, 40), (20, 80))
     objective = Objective(vgg, content, [style], TransferConfig())
-    assert objective.style_shapes == [(20, 80)]
+    assert objective.style_shapes == [(20, 80)]  # same pixel count as the content, same 1:4 aspect
+    scaled = Objective(vgg, content, [style], TransferConfig(style_scale=2.0))
+    assert scaled.style_shapes == [(40, 160)]
 
 
 def test_objective_validates_its_inputs(vgg: VGG19) -> None:
@@ -242,6 +247,45 @@ def test_luminance_progress_frames_are_in_colour(vgg: VGG19) -> None:
     )
     assert frames[0].shape[1] == 3
     assert not torch.allclose(frames[0][:, 0], frames[0][:, 1])  # not a grey image
+
+
+def test_coarse_to_fine(vgg: VGG19) -> None:
+    content, style = _images(16, (40, 60), (30, 30))
+    result = stylize_multiscale(vgg, content, [style], sizes=[20, 40], steps=[4, 2], config=TransferConfig())
+    assert result.image.shape == (1, 3, 40, 60)
+    assert [(r.scale, r.step) for r in result.history] == [(0, 1), (0, 2), (0, 3), (0, 4), (1, 1), (1, 2)]
+    elapsed = [r.elapsed for r in result.history]
+    assert elapsed == sorted(elapsed)
+    assert result.config.steps == 6
+    broadcast = stylize_multiscale(
+        vgg, content, [style], sizes=[20, 40], steps=[2], config=TransferConfig(color="luminance")
+    )
+    assert [r.scale for r in broadcast.history] == [0, 0, 1, 1]
+
+
+def test_coarse_to_fine_starts_each_scale_from_the_previous_result(vgg: VGG19) -> None:
+    content, style = _images(17, (32, 32), (32, 32))
+    config = TransferConfig(init="noise")
+    multi = stylize_multiscale(vgg, content, [style], sizes=[16, 32], steps=[5, 2], config=config)
+    coarse = stylize(vgg, resize(content, 16), [style], dataclasses.replace(config, steps=5))
+    fine = stylize(vgg, content, [style], dataclasses.replace(config, steps=2), init_image=coarse.image)
+    torch.testing.assert_close(multi.image, fine.image)
+
+
+def test_init_image_overrides_the_configured_init(vgg: VGG19) -> None:
+    content, style, start = _images(19, (24, 24), (24, 24), (12, 12))
+    config = TransferConfig(steps=1, init="noise")
+    result = stylize(vgg, content, [style], config, init_image=start)
+    expected, _ = Objective(vgg, content, [style], config)(resize(start, (24, 24)))
+    assert result.history[0].total == pytest.approx(float(expected), rel=1e-6)
+
+
+def test_coarse_to_fine_validates_its_schedule(vgg: VGG19) -> None:
+    content, style = _images(18, (16, 16), (16, 16))
+    with pytest.raises(ValueError, match="one steps value"):
+        stylize_multiscale(vgg, content, [style], sizes=[8, 16], steps=[1, 2, 3])
+    with pytest.raises(ValueError, match="at least one size"):
+        stylize_multiscale(vgg, content, [style], sizes=[], steps=[1])
 
 
 def test_loss_record_is_a_frozen_value() -> None:

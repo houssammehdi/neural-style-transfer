@@ -30,12 +30,12 @@ def test_parser_defaults() -> None:
     args = cli.build_parser().parse_args(["c.jpg", "s1.jpg", "s2.jpg", "--blend", "1", "2"])
     assert len(args.styles) == 2 and args.blend == [1.0, 2.0]
     assert args.weights == "torchvision" and args.optimizer == "lbfgs" and args.color == "style"
-    assert args.steps == 300 and args.size is None and args.style_weight is None
+    assert args.steps == [300] and args.size is None and args.style_weight is None
 
 
 def test_end_to_end_run_writes_the_image_and_frames(pictures: dict[str, Path], tmp_path: Path) -> None:
     out = tmp_path / "out" / "result.jpg"
-    argv = [str(pictures["content"]), str(pictures["style"]), "-o", str(out), "--color", "luminance"]
+    argv = [str(pictures["content"]), str(pictures["style"]), "-o", str(out)]
     argv += ["--weights", "random", "--size", "16", "--steps", "4", "--save-every", "2", "--device", "cpu"]
     assert cli.main(argv) == 0
     with Image.open(out) as img:
@@ -44,12 +44,12 @@ def test_end_to_end_run_writes_the_image_and_frames(pictures: dict[str, Path], t
     assert frames == ["result.jpg", "result_0002.jpg", "result_0004.jpg"]
 
 
-def test_spatial_control_with_masks(pictures: dict[str, Path], tmp_path: Path) -> None:
-    out = tmp_path / "masked.png"
+def test_coarse_to_fine_masks_and_colour_options(pictures: dict[str, Path], tmp_path: Path) -> None:
+    out = tmp_path / "multi.png"
     argv = [str(pictures["content"]), str(pictures["style"]), str(pictures["style2"]), "-o", str(out)]
-    argv += ["--weights", "random", "--size", "16", "--steps", "2", "--device", "cpu"]
-    argv += ["--masks", str(pictures["mask"]), str(pictures["mask"]), "--pooling", "avg"]
-    argv += ["--style-layers", "relu1_1", "relu2_1", "--content-layers", "relu2_2"]
+    argv += ["--weights", "random", "--size", "8", "16", "--steps", "2", "1", "--device", "cpu"]
+    argv += ["--masks", str(pictures["mask"]), str(pictures["mask"]), "--color", "luminance"]
+    argv += ["--style-layers", "relu1_1", "relu2_1", "--content-layers", "relu2_2", "--pooling", "avg"]
     assert cli.main(argv) == 0
     with Image.open(out) as img:
         assert img.size == (24, 16)
@@ -60,6 +60,8 @@ def test_spatial_control_with_masks(pictures: dict[str, Path], tmp_path: Path) -
     [
         (["--blend", "1", "2"], "one weight per style"),
         (["--masks", "a.png", "b.png"], "one mask per style"),
+        (["--size", "32", "16"], "ascending"),
+        (["--size", "8", "16", "--steps", "1", "2", "3"], "one per --size"),
         (["--style-weight", "-1"], "non-negative"),
     ],
 )
@@ -82,11 +84,11 @@ def test_unavailable_weights_are_explained(
     pictures: dict[str, Path], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def unavailable(weights: str) -> None:
-        raise WeightsUnavailableError("download.pytorch.org is unreachable")
+        raise WeightsUnavailableError("download.pytorch.org is unreachable; use --weights caffe")
 
     monkeypatch.setattr(cli, "load_vgg19", unavailable)
     assert cli.main([str(pictures["content"]), str(pictures["style"])]) == 1
-    assert "unreachable" in capsys.readouterr().err
+    assert "--weights caffe" in capsys.readouterr().err
 
 
 def test_version(capsys: pytest.CaptureFixture[str]) -> None:

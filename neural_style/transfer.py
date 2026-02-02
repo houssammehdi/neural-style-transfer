@@ -1,4 +1,4 @@
-"""The optimisation that performs style transfer.
+"""The optimisation that performs style transfer, at one scale or coarse-to-fine.
 
 The synthesised image's pixels are the only parameters; VGG-19 stays frozen.
 The objective is ``alpha * L_content + beta * L_style + gamma * TV``, where the
@@ -17,7 +17,7 @@ import torch
 import torch.nn.functional as F
 
 from .color import ColorMatchMethod, luminance, match_color, match_luminance, preserve_colors
-from .image import resize, resize_to_area
+from .image import Size, resize, resize_to_area
 from .losses import gram_matrix, guided_gram_matrix, total_variation
 from .model import VGG19, FeatureExtractor, Pooling
 
@@ -79,6 +79,10 @@ class TransferConfig:
     (plain transfer), ``"luminance"`` (luminance-only transfer, the content's
     colours are restored) or ``"match"`` (style images recoloured to the
     content's colour mean and covariance first, using ``color_match``).
+
+    ``style_scale`` sets the style images' size relative to the content: they
+    are resized, aspect ratio preserved, to ``style_scale**2`` times the content
+    image's pixel count.
     """
 
     steps: int = 300
@@ -94,6 +98,7 @@ class TransferConfig:
     style_blend: tuple[float, ...] | None = None
     color: ColorMode = "style"
     color_match: ColorMatchMethod = "eigen"
+    style_scale: float = 1.0
     seed: int = 0
 
     def __post_init__(self) -> None:
@@ -113,8 +118,8 @@ class TransferConfig:
             value = getattr(self, name)
             if value is not None and value < 0:
                 raise ValueError(f"{name} must be non-negative")
-        if self.lr <= 0:
-            raise ValueError("lr must be positive")
+        if self.lr <= 0 or self.style_scale <= 0:
+            raise ValueError("lr and style_scale must be positive")
         if self.style_blend is not None and (
             any(w < 0 for w in self.style_blend) or sum(self.style_blend) <= 0
         ):
@@ -148,11 +153,13 @@ class LossRecord:
     tv: float
     elapsed: float
     """Seconds from the start of the synthesis (target computation included) to this evaluation."""
+    scale: int = 0
+    """Index of the resolution in a coarse-to-fine run (0 for single-scale)."""
 
 
 @dataclass(frozen=True)
 class TransferResult:
-    """Output of :func:`stylize`."""
+    """Output of :func:`stylize` or :func:`stylize_multiscale`."""
 
     image: torch.Tensor
     """Final RGB image ``(1, 3, H, W)`` in ``[0, 1]``."""
@@ -269,8 +276,8 @@ class Objective:
 
     def _prepare_style(self, style: torch.Tensor, content_pixels: int) -> torch.Tensor:
         # Gram matrices are averages over positions, so style images keep their own aspect
-        # ratio; they are resized to the content's pixel count rather than to its shape.
-        style = resize_to_area(style, content_pixels)
+        # ratio; they are resized by area rather than to the content's shape.
+        style = resize_to_area(style, self.config.style_scale**2 * content_pixels)
         if self.config.color == "match":
             return match_color(style, self.content, self.config.color_match).clamp(0, 1)
         if self.config.color == "luminance":
@@ -320,8 +327,10 @@ def _fit_mask(mask: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
     return resize(mask, shape, mode="bilinear").clamp(0, 1)
 
 
-def _initial_image(objective: Objective, seed: int) -> torch.Tensor:
+def _initial_image(objective: Objective, init: torch.Tensor | None, seed: int) -> torch.Tensor:
     content = objective.working(objective.content)
+    if init is not None:
+        return objective.working(resize(init, (content.shape[-2], content.shape[-1])))
     if objective.config.init == "content":
         return content.clone()
     generator = torch.Generator().manual_seed(seed)
@@ -340,6 +349,7 @@ def _optimise(
     image: torch.Tensor,
     steps: int,
     started: float,
+    scale: int,
     on_progress: ProgressFn | None,
 ) -> tuple[torch.Tensor, list[LossRecord]]:
     image = image.detach().clone().requires_grad_(True)
@@ -366,6 +376,7 @@ def _optimise(
             style=parts["style"],
             tv=parts["tv"],
             elapsed=parts["elapsed"],
+            scale=scale,
         )
         history.append(record)
         if on_progress is not None:
@@ -384,25 +395,79 @@ def stylize(
     *,
     masks: Sequence[torch.Tensor] | None = None,
     style_masks: Sequence[torch.Tensor | None] | None = None,
+    init_image: torch.Tensor | None = None,
     on_progress: ProgressFn | None = None,
 ) -> TransferResult:
     """Optimise an image so its VGG-19 features match ``content`` and ``styles``.
 
     ``content`` fixes the output resolution; style images may have any size and
-    aspect ratio (they are resized to the content's pixel count). ``masks``
-    enables spatial control (see :class:`Objective`).
+    aspect ratio (they are resized by area, see :class:`TransferConfig`).
+    ``masks`` enables spatial control (see :class:`Objective`). ``init_image``
+    (RGB, any size) overrides ``config.init``; :func:`stylize_multiscale` uses it
+    to start each scale from the previous result.
 
     L-BFGS converges in far fewer steps than Adam here; Adam uses less memory.
     """
     started = time.perf_counter()
     objective = Objective(vgg, content, styles, config, masks=masks, style_masks=style_masks)
     cfg = objective.config
-    working, history = _optimise(
-        objective, _initial_image(objective, cfg.seed), cfg.steps, started, on_progress
-    )
+    initial = _initial_image(objective, init_image, cfg.seed)
+    working, history = _optimise(objective, initial, cfg.steps, started, 0, on_progress)
     return TransferResult(
         image=objective.compose(working),
         history=tuple(history),
         config=cfg,
+        seconds=time.perf_counter() - started,
+    )
+
+
+def stylize_multiscale(
+    vgg: VGG19,
+    content: torch.Tensor,
+    styles: Sequence[torch.Tensor],
+    sizes: Sequence[Size],
+    steps: Sequence[int],
+    config: TransferConfig | None = None,
+    *,
+    masks: Sequence[torch.Tensor] | None = None,
+    style_masks: Sequence[torch.Tensor | None] | None = None,
+    on_progress: ProgressFn | None = None,
+) -> TransferResult:
+    """Coarse-to-fine synthesis (Gatys et al., 2017, "Controlling Perceptual Factors").
+
+    The image is first synthesised at ``sizes[0]``, then repeatedly upsampled and
+    refined at each larger size, ``steps[i]`` optimisation steps at ``sizes[i]``
+    (a single ``steps`` value applies to every scale). The coarse pass fixes
+    the large-scale arrangement of the style cheaply; the fine passes only add
+    detail. Each scale recomputes its targets from ``content``, ``styles`` and
+    ``masks`` resized to that scale, so pass them at the finest resolution.
+    """
+    if not sizes:
+        raise ValueError("at least one size is required")
+    per_scale = list(steps) * len(sizes) if len(steps) == 1 else list(steps)
+    if len(per_scale) != len(sizes):
+        raise ValueError("give one steps value, or one per size")
+    base = config or TransferConfig()
+    started = time.perf_counter()
+    history: list[LossRecord] = []
+    image: torch.Tensor | None = None
+    for scale, (size, count) in enumerate(zip(sizes, per_scale, strict=True)):
+        objective = Objective(
+            vgg,
+            resize(content, size),
+            styles,
+            replace(base, steps=count),
+            masks=masks,
+            style_masks=style_masks,
+        )
+        initial = _initial_image(objective, image, objective.config.seed)
+        working, records = _optimise(objective, initial, count, started, scale, on_progress)
+        history += records
+        image = objective.compose(working)
+    assert image is not None
+    return TransferResult(
+        image=image,
+        history=tuple(history),
+        config=replace(objective.config, steps=sum(per_scale)),
         seconds=time.perf_counter() - started,
     )
