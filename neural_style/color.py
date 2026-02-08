@@ -29,7 +29,15 @@ YIQ_TO_RGB = torch.linalg.inv(RGB_TO_YIQ)
 
 
 def _apply(matrix: torch.Tensor, image: torch.Tensor) -> torch.Tensor:
-    return torch.einsum("ij,bjhw->bihw", matrix.to(image.device, image.dtype), image)
+    # Cast before moving: some devices (Apple MPS) have no float64.
+    return torch.einsum("ij,bjhw->bihw", matrix.to(dtype=image.dtype).to(image.device), image)
+
+
+def _cpu_pixels(image: torch.Tensor) -> torch.Tensor:
+    """The pixels of a single RGB image as a (3, N) float64 CPU tensor (MPS has no float64)."""
+    if image.shape[0] != 1 or image.shape[1] != 3:
+        raise ValueError(f"expected a single RGB image (1, 3, H, W), got {tuple(image.shape)}")
+    return image.detach().reshape(3, -1).to("cpu", torch.float64)
 
 
 def rgb_to_yiq(image: torch.Tensor) -> torch.Tensor:
@@ -75,9 +83,7 @@ def match_luminance(source: torch.Tensor, target: torch.Tensor, eps: float = 1e-
 
 
 def _pixel_stats(image: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    if image.shape[0] != 1 or image.shape[1] != 3:
-        raise ValueError(f"expected a single RGB image (1, 3, H, W), got {tuple(image.shape)}")
-    pixels = image.reshape(3, -1).double()
+    pixels = _cpu_pixels(image)
     mean = pixels.mean(dim=1)
     centred = pixels - mean[:, None]
     return mean, centred @ centred.T / pixels.shape[1]
@@ -104,11 +110,11 @@ def color_transform(
       with symmetric square roots from an eigendecomposition;
     * ``"cholesky"`` -- ``A = L_t L_s^(-1)`` with ``S = L L^T``.
 
-    ``b = mu_t - A mu_s``. Both are computed in float64.
+    ``b = mu_t - A mu_s``. Both are computed in float64 on the CPU and returned there.
     """
     mu_s, cov_s = _pixel_stats(source)
     mu_t, cov_t = _pixel_stats(target)
-    eye = torch.eye(3, dtype=torch.float64, device=cov_s.device)
+    eye = torch.eye(3, dtype=torch.float64)
     cov_s, cov_t = cov_s + eps * eye, cov_t + eps * eye
     if method == "eigen":
         a = _sqrtm(cov_t, 0.5, eps) @ _sqrtm(cov_s, -0.5, eps)
@@ -132,6 +138,5 @@ def match_color(
     callers clamp it.
     """
     a, b = color_transform(source, target, method, eps)
-    pixels = source.reshape(3, -1).double()
-    out = a @ pixels + b[:, None]
-    return out.reshape(source.shape).to(source.dtype)
+    out = a @ _cpu_pixels(source) + b[:, None]
+    return out.reshape(source.shape).to(dtype=source.dtype).to(source.device)

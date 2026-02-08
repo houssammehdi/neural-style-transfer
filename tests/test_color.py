@@ -100,6 +100,16 @@ def test_match_color_stays_finite_for_a_grey_source() -> None:
     torch.testing.assert_close(_stats(out)[0], _stats(_correlated_image(6))[0], atol=1e-4, rtol=0)
 
 
+def test_colour_statistics_are_computed_in_float64_on_the_cpu() -> None:
+    # Regression: the statistics were computed in float64 on the image's device, which fails on
+    # Apple MPS (no float64). The transform now lives on the CPU; the result keeps the input's type.
+    source, target = _correlated_image(7).float(), _correlated_image(8).float()
+    a, b = color_transform(source, target)
+    assert a.device.type == "cpu" and a.dtype == torch.float64 and b.dtype == torch.float64
+    out = match_color(source, target)
+    assert out.dtype == torch.float32 and out.device == source.device
+
+
 def test_match_color_validates_its_inputs() -> None:
     with pytest.raises(ValueError, match="single RGB image"):
         match_color(torch.rand(2, 3, 4, 4), torch.rand(1, 3, 4, 4))
