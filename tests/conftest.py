@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import pytest
 import torch
+from hypothesis import settings
 
 from neural_style import VGG19, load_vgg19
+
+# Property-based tests draw the same examples on every run, so CI results are reproducible.
+settings.register_profile("deterministic", derandomize=True, deadline=None)
+settings.load_profile("deterministic")
 
 
 @pytest.fixture(scope="session")
