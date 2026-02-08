@@ -83,12 +83,21 @@ def test_unknown_layer_is_reported(pictures: dict[str, Path], capsys: pytest.Cap
 def test_unavailable_weights_are_explained(
     pictures: dict[str, Path], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def unavailable(weights: str) -> None:
+    def unavailable(weights: str, **kwargs: object) -> None:
         raise WeightsUnavailableError("download.pytorch.org is unreachable; use --weights caffe")
 
     monkeypatch.setattr(cli, "load_vgg19", unavailable)
     assert cli.main([str(pictures["content"]), str(pictures["style"])]) == 1
     assert "--weights caffe" in capsys.readouterr().err
+
+
+def test_download_progress_is_reported_in_tenths(capsys: pytest.CaptureFixture[str]) -> None:
+    report = cli.download_progress()
+    for done in (0, 5_000_000, 8_000_000, 40_000_000, 80_000_000):
+        report(done, 80_000_000)
+    report(1, None)  # unknown size: silent
+    lines = capsys.readouterr().err.splitlines()
+    assert [line.split(": ")[1].split("%")[0] for line in lines] == ["0", "10", "50", "100"]
 
 
 def test_version(capsys: pytest.CaptureFixture[str]) -> None:

@@ -24,7 +24,7 @@ import torch
 
 from .layers import VGG19_LAYERS
 
-ProgressFn = Callable[[int, int | None], None]
+DownloadProgress = Callable[[int, int | None], None]
 """Download progress callback: ``(bytes_done, bytes_total_or_None)``."""
 
 
@@ -82,7 +82,7 @@ def sha256_file(path: Path, chunk_size: int = 1 << 20) -> str:
 def fetch(
     remote: RemoteFile,
     cache_dir: Path | None = None,
-    progress: ProgressFn | None = None,
+    progress: DownloadProgress | None = None,
     timeout: float = 60.0,
 ) -> Path:
     """Return a verified local copy of ``remote``, downloading it on first use.

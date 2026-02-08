@@ -24,6 +24,7 @@ from .transfer import (
     stylize,
     stylize_multiscale,
 )
+from .weights import DownloadProgress
 
 
 def pick_device(preferred: str = "auto") -> torch.device:
@@ -35,6 +36,21 @@ def pick_device(preferred: str = "auto") -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
+
+def download_progress() -> DownloadProgress:
+    """Return a callback that reports a download's progress in steps of 10 % on stderr."""
+    shown = -1
+
+    def report(done: int, total: int | None) -> None:
+        nonlocal shown
+        if total:
+            tenth = done * 10 // total
+            if tenth > shown:
+                shown = tenth
+                print(f"downloading VGG-19 weights: {tenth * 10}% of {total / 1e6:.0f} MB", file=sys.stderr)
+
+    return report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -142,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(str(exc))
 
     try:
-        vgg = load_vgg19(args.weights).to(device)
+        vgg = load_vgg19(args.weights, progress=download_progress()).to(device)
     except (WeightsUnavailableError, ImportError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from .layers import VGG19_BLOCK_DEPTHS, VGG19_LAYERS, VGG19_WIDTHS
-from .weights import CAFFE_VGG19, ProgressFn, fetch, keras_vgg19_state_dict
+from .weights import CAFFE_VGG19, DownloadProgress, fetch, keras_vgg19_state_dict
 
 WeightSource = Literal["torchvision", "caffe", "random"]
 WEIGHT_SOURCES: tuple[WeightSource, ...] = get_args(WeightSource)
@@ -161,7 +161,7 @@ def load_vgg19(
     weights: WeightSource = "torchvision",
     *,
     cache_dir: Path | None = None,
-    progress: ProgressFn | None = None,
+    progress: DownloadProgress | None = None,
     seed: int = 0,
 ) -> VGG19:
     """Load a frozen VGG-19 in eval mode, paired with its input normalisation.
