@@ -226,9 +226,17 @@ class FeatureExtractor(nn.Module):
         self.body = nn.Sequential(body)
         self.layers = tuple(name for name in VGG19_LAYERS[:depth] if name in wanted)
         self.source = vgg.source
+        pools = sum(isinstance(m, (nn.MaxPool2d, nn.AvgPool2d)) for m in self.body)
+        self.min_size = 2**pools
+        """Smallest height and width that still leave a feature map at the deepest layer."""
 
     def forward(self, image: torch.Tensor) -> dict[str, torch.Tensor]:
         """Return ``{layer: activation}`` for the requested layers of an RGB image in ``[0, 1]``."""
+        if min(image.shape[-2:]) < self.min_size:
+            raise ValueError(
+                f"an image of {image.shape[-2]}x{image.shape[-1]} px is too small for {self.layers[-1]}, "
+                f"which needs at least {self.min_size} px on each side (use a larger size or style scale)"
+            )
         x: torch.Tensor = self.normalization(image)
         out: dict[str, torch.Tensor] = {}
         for name, module in self.body.named_children():

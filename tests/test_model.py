@@ -131,6 +131,17 @@ def test_unknown_layers_are_rejected_with_a_clear_message(vgg: VGG19) -> None:
         FeatureExtractor(vgg, [])
 
 
+def test_images_too_small_for_the_deepest_layer_are_rejected(vgg: VGG19) -> None:
+    # Regression: a 15 px image reaching relu5_1 failed inside PyTorch's pooling with
+    # "Output size is too small"; four poolings need at least 16 px.
+    extractor = FeatureExtractor(vgg, ["relu5_1"])
+    assert extractor.min_size == 16
+    assert extractor(torch.rand(1, 3, 16, 16))["relu5_1"].shape[-2:] == (1, 1)
+    with pytest.raises(ValueError, match="at least 16 px"):
+        extractor(torch.rand(1, 3, 15, 40))
+    assert FeatureExtractor(vgg, ["relu1_1"]).min_size == 1
+
+
 def test_average_pooling_replaces_max_pooling(vgg: VGG19) -> None:
     extractor = FeatureExtractor(vgg, ["relu3_1"], pooling="avg")
     pools = [m for m in extractor.body if isinstance(m, (nn.MaxPool2d, nn.AvgPool2d))]
