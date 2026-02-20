@@ -11,6 +11,8 @@ dependencies = ["torch>=2.1", "torchvision>=0.16", "numpy>=1.24", "pillow>=10"]
 [project.optional-dependencies]
 # Converting the original Caffe VGG-19 weights (Keras HDF5 release) needs h5py.
 caffe = ["h5py>=3.8"]
+# Plots in scripts/ (convergence curves).
+plots = ["matplotlib>=3.7"]
 # Exact pins: formatter, linter and test-runner versions decide what CI accepts.
 dev = [
     "pytest==9.1.1",
