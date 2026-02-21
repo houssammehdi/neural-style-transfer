@@ -175,7 +175,8 @@ def main(argv: list[str] | None = None) -> int:
         if record.step == 1 or record.step % 50 == 0 or done == total_steps:
             print(
                 f"scale {record.scale}  step {record.step:4d}  total {record.total:11.4g}  "
-                f"content {record.content:11.4g}  style {record.style:11.4g}  ({record.elapsed:6.1f}s)"
+                f"content {record.content:11.4g}  style {record.style:11.4g}  ({record.elapsed:6.1f}s)",
+                flush=True,  # progress must show up promptly when stdout is a pipe or a log file
             )
         if args.save_every and done % args.save_every == 0:
             frame = args.output.with_name(f"{args.output.stem}_{done:04d}{args.output.suffix}")
@@ -183,7 +184,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(
         f"device={device} weights={args.weights} sizes={sizes} steps={args.steps} "
-        f"styles={n_styles} color={args.color}"
+        f"styles={n_styles} color={args.color}",
+        flush=True,
     )
     started = time.perf_counter()
     try:
