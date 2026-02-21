@@ -428,7 +428,8 @@ def stylize(
     (RGB, any size) overrides ``config.init``; :func:`stylize_multiscale` uses it
     to start each scale from the previous result.
 
-    L-BFGS converges in far fewer steps than Adam here; Adam uses less memory.
+    With a well-chosen learning rate Adam descends faster in the first ~100 steps; L-BFGS
+    reaches a lower loss in longer runs (``docs/method.md``). Adam uses less memory.
     """
     started = time.perf_counter()
     objective = Objective(vgg, content, styles, config, masks=masks, style_masks=style_masks)
