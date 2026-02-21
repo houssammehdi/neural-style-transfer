@@ -1,0 +1,1531 @@
+{
+  "runs": {
+    "layers_relu1_1_1": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 29.12,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 655.4898681640625,
+        "content": 0.0,
+        "style": 655.4898681640625,
+        "tv": 0.0,
+        "elapsed": 0.6406661099999837,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 630.669677734375,
+        "content": 8.984356880187988,
+        "style": 621.685302734375,
+        "tv": 0.0,
+        "elapsed": 29.096102876999794,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        5.88916015625,
+        4.583984375,
+        3.703125
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.802734375,
+          4.44677734375,
+          3.685546875
+        ]
+      }
+    },
+    "layers_relu1_1_10": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 10.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 28.94,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 6554.8984375,
+        "content": 0.0,
+        "style": 6554.8984375,
+        "tv": 0.0,
+        "elapsed": 0.5461275000006935,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 5327.47607421875,
+        "content": 1464.72998046875,
+        "style": 3862.74609375,
+        "tv": 0.0,
+        "elapsed": 28.911542126999848,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.802734375,
+        4.44677734375,
+        3.685546875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.31689453125,
+          4.369140625,
+          3.68505859375
+        ]
+      }
+    },
+    "layers_relu1_1_100": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 28.36,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 65548.984375,
+        "content": 0.0,
+        "style": 65548.984375,
+        "tv": 0.0,
+        "elapsed": 0.5182225510006901,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 10166.2578125,
+        "content": 8347.5166015625,
+        "style": 1818.7412109375,
+        "tv": 0.0,
+        "elapsed": 28.336399046000224,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.31689453125,
+        4.369140625,
+        3.68505859375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.98486328125,
+          4.28466796875,
+          3.67822265625
+        ]
+      }
+    },
+    "layers_relu1_1_1000": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1000.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 35.05,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 655489.875,
+        "content": 0.0,
+        "style": 655489.875,
+        "tv": 0.0,
+        "elapsed": 0.5335384629997861,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 35556.59375,
+        "content": 32094.767578125,
+        "style": 3461.826416015625,
+        "tv": 0.0,
+        "elapsed": 35.03109245499945,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.98486328125,
+        4.28466796875,
+        3.67822265625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.65234375,
+          4.4384765625,
+          3.75390625
+        ]
+      }
+    },
+    "layers_relu2_1_1": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 28.56,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 18360.32421875,
+        "content": 0.0,
+        "style": 18360.32421875,
+        "tv": 0.0,
+        "elapsed": 0.5140004320001026,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 7458.85546875,
+        "content": 2812.620849609375,
+        "style": 4646.23486328125,
+        "tv": 0.0,
+        "elapsed": 28.54471262900006,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.65234375,
+        4.4384765625,
+        3.75390625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.1611328125,
+          4.337890625,
+          3.73779296875
+        ]
+      }
+    },
+    "layers_relu2_1_10": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 10.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 27.41,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 183603.25,
+        "content": 0.0,
+        "style": 183603.25,
+        "tv": 0.0,
+        "elapsed": 0.4871679329999097,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 16086.98046875,
+        "content": 13109.5615234375,
+        "style": 2977.419189453125,
+        "tv": 0.0,
+        "elapsed": 27.387439795999853,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.1611328125,
+        4.337890625,
+        3.73779296875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.70166015625,
+          4.208984375,
+          3.712890625
+        ]
+      }
+    },
+    "layers_relu2_1_100": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 28.18,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 1836032.375,
+        "content": 0.0,
+        "style": 1836032.375,
+        "tv": 0.0,
+        "elapsed": 0.5525477410001258,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 161294.3125,
+        "content": 62913.7734375,
+        "style": 98380.5390625,
+        "tv": 0.0,
+        "elapsed": 28.16539224600001,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.70166015625,
+        4.208984375,
+        3.712890625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.4609375,
+          4.1103515625,
+          3.693359375
+        ]
+      }
+    },
+    "layers_relu2_1_1000": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1000.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 27.84,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 18360324.0,
+        "content": 0.0,
+        "style": 18360324.0,
+        "tv": 0.0,
+        "elapsed": 0.5009458909999012,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 56691.8828125,
+        "content": 47366.01953125,
+        "style": 9325.86328125,
+        "tv": 0.0,
+        "elapsed": 27.826110740999866,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.4609375,
+        4.1103515625,
+        3.693359375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.2783203125,
+          4.0029296875,
+          3.669921875
+        ]
+      }
+    },
+    "layers_relu3_1_1": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 29.78,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 20947.341796875,
+        "content": 0.0,
+        "style": 20947.341796875,
+        "tv": 0.0,
+        "elapsed": 0.5565106100002595,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 8992.6337890625,
+        "content": 3626.427001953125,
+        "style": 5366.20654296875,
+        "tv": 0.0,
+        "elapsed": 29.765070751000167,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.2783203125,
+        4.0029296875,
+        3.669921875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.16796875,
+          3.90576171875,
+          3.646484375
+        ]
+      }
+    },
+    "layers_relu3_1_10": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 10.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 29.12,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 209473.421875,
+        "content": 0.0,
+        "style": 209473.421875,
+        "tv": 0.0,
+        "elapsed": 0.4997496689993568,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 19245.65234375,
+        "content": 14724.353515625,
+        "style": 4521.298828125,
+        "tv": 0.0,
+        "elapsed": 29.09760565399938,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.16796875,
+        3.90576171875,
+        3.646484375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.1005859375,
+          3.81787109375,
+          3.62451171875
+        ]
+      }
+    },
+    "layers_relu3_1_100": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 33.41,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 2094734.125,
+        "content": 0.0,
+        "style": 2094734.125,
+        "tv": 0.0,
+        "elapsed": 0.49874485399959667,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 36068.67578125,
+        "content": 28061.673828125,
+        "style": 8007.00146484375,
+        "tv": 0.0,
+        "elapsed": 33.38865939100015,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.1005859375,
+        3.81787109375,
+        3.62451171875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.87158203125,
+          3.95751953125,
+          3.6787109375
+        ]
+      }
+    },
+    "layers_relu3_1_1000": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1000.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 27.71,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 20947342.0,
+        "content": 0.0,
+        "style": 20947342.0,
+        "tv": 0.0,
+        "elapsed": 0.5036030660003235,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 79942.125,
+        "content": 63507.21484375,
+        "style": 16434.9140625,
+        "tv": 0.0,
+        "elapsed": 27.693488652999804,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.8017578125,
+        3.94140625,
+        3.6748046875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.53564453125,
+          3.8779296875,
+          3.6611328125
+        ]
+      }
+    },
+    "layers_relu4_1_1": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 29.71,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 50406.09375,
+        "content": 0.0,
+        "style": 50406.09375,
+        "tv": 0.0,
+        "elapsed": 0.5033014910004567,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 26204.865234375,
+        "content": 14701.8583984375,
+        "style": 11503.0068359375,
+        "tv": 0.0,
+        "elapsed": 29.693441354000242,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.53564453125,
+        3.8779296875,
+        3.6611328125
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          2.98681640625,
+          3.71240234375,
+          3.61181640625
+        ]
+      }
+    },
+    "layers_relu4_1_10": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 10.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 29.6,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 504060.9375,
+        "content": 0.0,
+        "style": 504060.9375,
+        "tv": 0.0,
+        "elapsed": 0.4995019689995388,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 50675.9453125,
+        "content": 39087.54296875,
+        "style": 11588.40234375,
+        "tv": 0.0,
+        "elapsed": 29.577906843000164,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        2.98681640625,
+        3.71240234375,
+        3.61181640625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          2.59765625,
+          3.546875,
+          3.55908203125
+        ]
+      }
+    },
+    "layers_relu4_1_100": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 34.01,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 5040609.5,
+        "content": 0.0,
+        "style": 5040609.5,
+        "tv": 0.0,
+        "elapsed": 0.5666142400004901,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 97705.0625,
+        "content": 72618.75,
+        "style": 25086.30859375,
+        "tv": 0.0,
+        "elapsed": 33.98504437000065,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        2.59765625,
+        3.546875,
+        3.55908203125
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          2.9970703125,
+          3.548828125,
+          3.55859375
+        ]
+      }
+    },
+    "layers_relu4_1_1000": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1000.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 30.19,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 50406092.0,
+        "content": 0.0,
+        "style": 50406092.0,
+        "tv": 0.0,
+        "elapsed": 0.5224129210000683,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 393509.4375,
+        "content": 132425.046875,
+        "style": 261084.375,
+        "tv": 0.0,
+        "elapsed": 30.17050283000026,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        2.9970703125,
+        3.548828125,
+        3.55859375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.0,
+          3.49462890625,
+          3.5390625
+        ]
+      }
+    },
+    "layers_relu5_1_1": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 43.93,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 50406.5,
+        "content": 0.0,
+        "style": 50406.5,
+        "tv": 0.0,
+        "elapsed": 0.6569397389994265,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 26211.91796875,
+        "content": 14814.93359375,
+        "style": 11396.9853515625,
+        "tv": 0.0,
+        "elapsed": 43.909902679999504,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.0,
+        3.49462890625,
+        3.5390625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.4814453125,
+          3.57568359375,
+          3.5654296875
+        ]
+      }
+    },
+    "layers_relu5_1_10": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 10.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 37.63,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 504065.0,
+        "content": 0.0,
+        "style": 504065.0,
+        "tv": 0.0,
+        "elapsed": 0.6244154650003111,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 50599.94140625,
+        "content": 39056.03125,
+        "style": 11543.9111328125,
+        "tv": 0.0,
+        "elapsed": 37.60516856000049,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.4814453125,
+        3.57568359375,
+        3.5654296875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.2783203125,
+          3.51171875,
+          3.54248046875
+        ]
+      }
+    },
+    "layers_relu5_1_100": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 40.98,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 5040650.0,
+        "content": 0.0,
+        "style": 5040650.0,
+        "tv": 0.0,
+        "elapsed": 0.6733376199999839,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 96964.828125,
+        "content": 72207.484375,
+        "style": 24757.341796875,
+        "tv": 0.0,
+        "elapsed": 40.958184934999736,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.2783203125,
+        3.51171875,
+        3.54248046875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          3.60986328125,
+          3.54541015625,
+          3.55224609375
+        ]
+      }
+    },
+    "layers_relu5_1_1000": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        160,
+        241
+      ],
+      "sizes": [
+        160
+      ],
+      "config": {
+        "steps": 100,
+        "content_weight": 1.0,
+        "style_weight": 1000.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 43.29,
+      "steps": 100,
+      "first": {
+        "step": 1,
+        "total": 50406500.0,
+        "content": 0.0,
+        "style": 50406500.0,
+        "tv": 0.0,
+        "elapsed": 0.7971871010004179,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 100,
+        "total": 414255.9375,
+        "content": 134643.6875,
+        "style": 279612.25,
+        "tv": 0.0,
+        "elapsed": 43.273537003000456,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.60986328125,
+        3.54541015625,
+        3.55224609375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.06298828125,
+          3.70849609375,
+          3.60986328125
+        ]
+      }
+    }
+  },
+  "jpeg_quality": 76,
+  "style_weights": [
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ]
+}

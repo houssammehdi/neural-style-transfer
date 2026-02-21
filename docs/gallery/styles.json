@@ -1,0 +1,941 @@
+{
+  "runs": {
+    "styles_chelsea_starry_night": {
+      "content": "chelsea.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        256,
+        385
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 315.13,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 5082568.5,
+        "content": 0.0,
+        "style": 5082568.5,
+        "tv": 0.0,
+        "elapsed": 3.351116642999841,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 75452.1953125,
+        "content": 64577.63671875,
+        "style": 10874.5595703125,
+        "tv": 0.0,
+        "elapsed": 315.0618861949997,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        3.9697265625,
+        3.35888671875,
+        3.60546875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          6.89697265625,
+          5.1708984375,
+          4.27490234375
+        ]
+      }
+    },
+    "styles_chelsea_the_scream": {
+      "content": "chelsea.png",
+      "styles": [
+        "the_scream.jpg"
+      ],
+      "shape": [
+        256,
+        385
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 438.56,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 1307188.875,
+        "content": 0.0,
+        "style": 1307188.875,
+        "tv": 0.0,
+        "elapsed": 2.16927876400041,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 57623.37109375,
+        "content": 46999.03125,
+        "style": 10624.33984375,
+        "tv": 0.0,
+        "elapsed": 436.1200619930005,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        6.89697265625,
+        5.1708984375,
+        4.27490234375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          9.97119140625,
+          7.3955078125,
+          5.5908203125
+        ]
+      }
+    },
+    "styles_chelsea_shipwreck": {
+      "content": "chelsea.png",
+      "styles": [
+        "shipwreck.jpg"
+      ],
+      "shape": [
+        256,
+        385
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 372.18,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 898989.5625,
+        "content": 0.0,
+        "style": 898989.5625,
+        "tv": 0.0,
+        "elapsed": 6.674204867999833,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 36813.484375,
+        "content": 30277.21875,
+        "style": 6536.26416015625,
+        "tv": 0.0,
+        "elapsed": 371.8899989219999,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        9.97119140625,
+        7.3955078125,
+        5.5908203125
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          6.00537109375,
+          6.9150390625,
+          6.03515625
+        ]
+      }
+    },
+    "styles_chelsea_woman-with-hat-matisse": {
+      "content": "chelsea.png",
+      "styles": [
+        "woman-with-hat-matisse.jpg"
+      ],
+      "shape": [
+        256,
+        385
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 254.4,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 2301773.75,
+        "content": 0.0,
+        "style": 2301773.75,
+        "tv": 0.0,
+        "elapsed": 1.8809013439995397,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 68454.296875,
+        "content": 56021.24609375,
+        "style": 12433.046875,
+        "tv": 0.0,
+        "elapsed": 254.3248129120002,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        6.00537109375,
+        6.9150390625,
+        6.03515625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          5.3056640625,
+          6.1337890625,
+          5.93701171875
+        ]
+      }
+    },
+    "styles_coffee_starry_night": {
+      "content": "coffee.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 295.12,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 5173752.0,
+        "content": 0.0,
+        "style": 5173752.0,
+        "tv": 0.0,
+        "elapsed": 1.8230580359995656,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 100497.234375,
+        "content": 85802.8125,
+        "style": 14694.41796875,
+        "tv": 0.0,
+        "elapsed": 294.9214304909992,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        5.3056640625,
+        6.1337890625,
+        5.93701171875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          6.708984375,
+          6.45166015625,
+          6.13037109375
+        ]
+      }
+    },
+    "styles_coffee_the_scream": {
+      "content": "coffee.png",
+      "styles": [
+        "the_scream.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 440.82,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 2015897.125,
+        "content": 0.0,
+        "style": 2015897.125,
+        "tv": 0.0,
+        "elapsed": 2.8023298250000153,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 67106.046875,
+        "content": 52487.65234375,
+        "style": 14618.3974609375,
+        "tv": 0.0,
+        "elapsed": 440.5680421570005,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        6.708984375,
+        6.45166015625,
+        6.13037109375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          5.49072265625,
+          7.013671875,
+          6.6923828125
+        ]
+      }
+    },
+    "styles_coffee_shipwreck": {
+      "content": "coffee.png",
+      "styles": [
+        "shipwreck.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 403.64,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 3295677.25,
+        "content": 0.0,
+        "style": 3295677.25,
+        "tv": 0.0,
+        "elapsed": 5.2927740960003575,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 64570.265625,
+        "content": 55421.54296875,
+        "style": 9148.724609375,
+        "tv": 0.0,
+        "elapsed": 403.57813152000017,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        5.49072265625,
+        7.013671875,
+        6.6923828125
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.89501953125,
+          5.94580078125,
+          6.375
+        ]
+      }
+    },
+    "styles_coffee_woman-with-hat-matisse": {
+      "content": "coffee.png",
+      "styles": [
+        "woman-with-hat-matisse.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 361.17,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 2731373.5,
+        "content": 0.0,
+        "style": 2731373.5,
+        "tv": 0.0,
+        "elapsed": 1.8102827250004339,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 65056.0859375,
+        "content": 52579.83203125,
+        "style": 12476.255859375,
+        "tv": 0.0,
+        "elapsed": 360.81103004099987,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.89501953125,
+        5.94580078125,
+        6.375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          5.224609375,
+          5.32861328125,
+          5.9384765625
+        ]
+      }
+    },
+    "styles_rocket_starry_night": {
+      "content": "rocket.jpg",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 392.67,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 4316551.0,
+        "content": 0.0,
+        "style": 4316551.0,
+        "tv": 0.0,
+        "elapsed": 6.793978727999274,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 85477.390625,
+        "content": 72832.5078125,
+        "style": 12644.8837890625,
+        "tv": 0.0,
+        "elapsed": 392.6067875989993,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        5.224609375,
+        5.32861328125,
+        5.9384765625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.37109375,
+          5.27880859375,
+          5.81396484375
+        ]
+      }
+    },
+    "styles_rocket_the_scream": {
+      "content": "rocket.jpg",
+      "styles": [
+        "the_scream.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 403.26,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 1802180.25,
+        "content": 0.0,
+        "style": 1802180.25,
+        "tv": 0.0,
+        "elapsed": 1.81701639899984,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 72894.5234375,
+        "content": 61542.16796875,
+        "style": 11352.3544921875,
+        "tv": 0.0,
+        "elapsed": 403.1812405210003,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.37109375,
+        5.27880859375,
+        5.81396484375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          8.0703125,
+          6.43359375,
+          6.048828125
+        ]
+      }
+    },
+    "styles_rocket_shipwreck": {
+      "content": "rocket.jpg",
+      "styles": [
+        "shipwreck.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 259.53,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 1169460.375,
+        "content": 0.0,
+        "style": 1169460.375,
+        "tv": 0.0,
+        "elapsed": 2.0708086659997207,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 51713.7421875,
+        "content": 43462.58203125,
+        "style": 8251.158203125,
+        "tv": 0.0,
+        "elapsed": 259.44854244700036,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        8.0703125,
+        6.43359375,
+        6.048828125
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.853515625,
+          5.18310546875,
+          5.5966796875
+        ]
+      }
+    },
+    "styles_rocket_woman-with-hat-matisse": {
+      "content": "rocket.jpg",
+      "styles": [
+        "woman-with-hat-matisse.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 307.47,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 2245708.0,
+        "content": 0.0,
+        "style": 2245708.0,
+        "tv": 0.0,
+        "elapsed": 2.148510543998782,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 79691.7421875,
+        "content": 65136.34765625,
+        "style": 14555.3974609375,
+        "tv": 0.0,
+        "elapsed": 307.39700478599843,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.86572265625,
+        5.1796875,
+        5.59326171875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          4.509765625,
+          5.31396484375,
+          5.58837890625
+        ]
+      }
+    }
+  },
+  "jpeg_quality": 74
+}

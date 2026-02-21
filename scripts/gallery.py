@@ -2,7 +2,7 @@
 
     python scripts/fetch_examples.py
     python scripts/gallery.py styles hero spatial color scale layers   # images
-    python scripts/gallery.py speed convergence multiscale --threads 4   # timing-sensitive runs
+    python scripts/gallery.py speed convergence multiscale --threads 2   # timing-sensitive runs
 
 Each experiment writes web-sized JPEG composites (at most 300 KB each) and a
 JSON record of its settings, losses and timings to ``docs/gallery/``. Raw

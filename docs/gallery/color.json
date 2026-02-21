@@ -1,0 +1,317 @@
+{
+  "runs": {
+    "styles_coffee_starry_night": {
+      "content": "coffee.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "style",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 295.12,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 5173752.0,
+        "content": 0.0,
+        "style": 5173752.0,
+        "tv": 0.0,
+        "elapsed": 1.8230580359995656,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 100497.234375,
+        "content": 85802.8125,
+        "style": 14694.41796875,
+        "tv": 0.0,
+        "elapsed": 294.9214304909992,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        5.3056640625,
+        6.1337890625,
+        5.93701171875
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          6.708984375,
+          6.45166015625,
+          6.13037109375
+        ]
+      }
+    },
+    "color_luminance": {
+      "content": "coffee.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "luminance",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 303.78,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 610639.25,
+        "content": 0.0,
+        "style": 610639.25,
+        "tv": 0.0,
+        "elapsed": 1.7986990249992232,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 27842.1015625,
+        "content": 23131.908203125,
+        "style": 4710.19287109375,
+        "tv": 0.0,
+        "elapsed": 303.7596855739994,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        4.509765625,
+        5.31396484375,
+        5.58837890625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          5.634765625,
+          5.35302734375,
+          5.49462890625
+        ]
+      }
+    },
+    "color_match_eigen": {
+      "content": "coffee.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "match",
+        "color_match": "eigen",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 599.48,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 2443772.0,
+        "content": 0.0,
+        "style": 2443772.0,
+        "tv": 0.0,
+        "elapsed": 2.0363228039987007,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 68419.0859375,
+        "content": 56227.61328125,
+        "style": 12191.470703125,
+        "tv": 0.0,
+        "elapsed": 599.421988692,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        5.634765625,
+        5.35302734375,
+        5.49462890625
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          7.60400390625,
+          7.64404296875,
+          6.67724609375
+        ]
+      }
+    },
+    "color_match_cholesky": {
+      "content": "coffee.png",
+      "styles": [
+        "starry_night.jpg"
+      ],
+      "shape": [
+        256,
+        384
+      ],
+      "sizes": [
+        256
+      ],
+      "config": {
+        "steps": 200,
+        "content_weight": 1.0,
+        "style_weight": 100.0,
+        "tv_weight": 0.0,
+        "content_layers": [
+          "relu4_2"
+        ],
+        "style_layers": [
+          "relu1_1",
+          "relu2_1",
+          "relu3_1",
+          "relu4_1",
+          "relu5_1"
+        ],
+        "pooling": "avg",
+        "optimizer": "lbfgs",
+        "line_search": false,
+        "lr": 0.02,
+        "init": "content",
+        "style_blend": null,
+        "color": "match",
+        "color_match": "cholesky",
+        "style_scale": 1.0,
+        "seed": 0
+      },
+      "seconds": 392.89,
+      "steps": 200,
+      "first": {
+        "step": 1,
+        "total": 2293486.25,
+        "content": 0.0,
+        "style": 2293486.25,
+        "tv": 0.0,
+        "elapsed": 1.7719443019996106,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "last": {
+        "step": 200,
+        "total": 67499.6953125,
+        "content": 54491.24609375,
+        "style": 13008.447265625,
+        "tv": 0.0,
+        "elapsed": 392.59950104400014,
+        "scale": 0,
+        "evaluations": 1
+      },
+      "loadavg_start": [
+        7.60400390625,
+        7.64404296875,
+        6.67724609375
+      ],
+      "machine": {
+        "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+        "logical_cpus": 4,
+        "torch_threads": 2,
+        "torch": "2.14.0+cu130",
+        "python": "3.11.15",
+        "loadavg": [
+          10.35107421875,
+          7.83154296875,
+          6.85205078125
+        ]
+      }
+    }
+  },
+  "jpeg_quality": 88
+}
