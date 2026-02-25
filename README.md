@@ -4,144 +4,178 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Re-paints a photograph in the style of an artwork by optimising the image's pixels so that its deep
-VGG-19 features match the *content* of one image and the *style* (feature correlations) of another —
-the method of Gatys, Ecker & Bethge, [*Image Style Transfer Using Convolutional Neural
-Networks*](https://openaccess.thecvf.com/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf)
-(CVPR 2016).
+A faithful, tested implementation of the neural style transfer methods of Gatys et al.: the
+original algorithm (CVPR 2016), colour preservation (2016), and spatial, colour and scale control
+(CVPR 2017). It optimises the pixels of an image until its VGG-19 features match the *content* of a
+photo and the *style* of a painting, and it runs on a CPU.
 
-Started in 2019 as a university Project Laboratory (AUT); rewritten in 2026 as a tested,
-installable package with a CLI.
+![A rocket launch photo in the style of The Starry Night](docs/gallery/hero.jpg)
+<sub>A SpaceX launch photo in the style of Van Gogh's *The Starry Night*, 427 × 640 px, synthesised
+coarse-to-fine on a 4-vCPU cloud VM with the original Caffe VGG-19. All inputs are public domain
+or CC0 ([credits](docs/gallery/CREDITS.md)).</sub>
 
-![content + style → result](docs/showcase.jpg)
-<sub>Content photo · style painting · result (L-BFGS, from the original 2019 experiment notebook).</sub>
+## What's inside
 
-## Features
-
-- VGG-19 feature extractor, truncated after the deepest layer the loss uses
-- Canonical VGG-19 layer names (`conv4_2`, `relu3_1`, `pool2`, …); defaults: content `conv2_2`,
-  style `conv1_1…conv3_1` (the PyTorch tutorial's choice), all configurable
-- **Multi-style blending** — interpolate between several paintings with `--blend`
-- **Spatial control** — `--masks` applies each style to its own region, with guided Gram matrices
-  (Gatys et al., CVPR 2017)
-- **Scale control** — coarse-to-fine synthesis (`--size 256 512 --steps 300 100`) for higher
-  resolutions at lower cost, and `--style-scale` for the size of the brush strokes
-- **Colour control** (Gatys et al., 2016) — `--color luminance` transfers style on the luminance
-  channel only and keeps the photo's colours; `--color match` first recolours the painting to the
-  photo's colour mean and covariance (`--color-match eigen|cholesky`)
-- Total-variation regularisation against high-frequency noise
-- L-BFGS (fast convergence) or Adam (lower memory, works well on Apple MPS)
-- Content or noise initialisation, reproducible seeds, intermediate frame export
-- Auto device selection: CUDA → MPS → CPU
-
-## How it works
-
-```mermaid
-flowchart LR
-    C[Content image] --> N
-    S["Style image(s)"] --> N
-    X["Generated image<br/>(pixels = parameters)"] --> N[ImageNet<br/>normalisation]
-    N --> V["VGG-19 conv blocks<br/>(frozen weights)"]
-    V -->|conv2_2 activations| CL["Content loss<br/>MSE of features"]
-    V -->|conv1_1..conv3_1 activations| SL["Style loss<br/>MSE of Gram matrices"]
-    X --> TV[Total variation]
-    CL --> L((weighted sum))
-    SL --> L
-    TV --> L
-    L -->|backprop to pixels| X
-```
-
-For a layer with feature map $F \in \mathbb{R}^{C \times HW}$, the style is summarised by the
-Gram matrix $G = F F^\top / (CHW)$: which features fire *together*, regardless of *where*.
-The generated image $x$ minimises
-
-$$
-\mathcal{L}(x) = \alpha \sum_{l \in \text{content}} \operatorname{mean}\big(F_l(x) - F_l(c)\big)^2
-             + \beta \sum_{l \in \text{style}} \operatorname{mean}\Big(G_l(x) - \sum_k w_k\, G_l(s_k)\Big)^2
-             + \gamma\, \mathrm{TV}(x)
-$$
-
-where the means run over all entries (both terms are mean squared errors) and the weights $w_k$
-blend multiple style images. Only the pixels of $x$ are optimised; the network is frozen. A feature
-extractor returns the activations of every requested layer from one forward pass.
+- **The weights Gatys et al. used**: the original Caffe VGG-19 of Simonyan & Zisserman, fetched
+  from a GitHub release asset, SHA-256 verified and converted to PyTorch, with Caffe
+  preprocessing. The conversion is checked against a NumPy cross-correlation and by ImageNet
+  classification ([details](docs/method.md#2-the-feature-space-why-vgg-19-and-which-vgg-19)).
+  torchvision's ImageNet weights remain the default; if they cannot be downloaded, the error
+  message points to `--weights caffe`.
+- **The paper's configuration** as the default for those weights: content `relu4_2`, style
+  `relu1_1`…`relu5_1`, average pooling, L-BFGS.
+- **Spatial control**: `--masks` gives each style its own region (guided Gram matrices).
+- **Colour control**: luminance-only transfer, or the painting recoloured to the photo's colour
+  statistics first.
+- **Scale control**: coarse-to-fine synthesis for larger images, and `--style-scale`.
+- Multi-style blending; L-BFGS (optionally with a line search) or Adam; automatic device
+  selection (CUDA, Apple MPS, CPU).
+- Typed (`mypy --strict`) and tested offline, with property-based tests of the maths.
 
 ## Quickstart
 
 ```bash
-pip install torch torchvision            # or the CUDA / MPS build for your machine
-pip install -e .
+pip install torch torchvision               # or the CUDA / MPS build for your machine
+pip install -e ".[caffe]"                   # h5py, to read the Caffe weights
+python scripts/fetch_examples.py            # public-domain / CC0 example images
 
-python -m neural_style photo.jpg painting.jpg -o out.jpg --steps 300
+neural-style examples/inputs/chelsea.png examples/inputs/starry_night.jpg \
+    --weights caffe --size 256 --steps 200 -o cat.jpg
 ```
 
-The first run downloads the ImageNet VGG-19 weights (~550 MB) through torchvision. Without access
-to download.pytorch.org, `--weights caffe` uses the original Caffe VGG-19 of Simonyan & Zisserman
-(the weights Gatys et al. used) instead: 80 MB, fetched once from a GitHub release asset,
-SHA-256 verified and cached in `~/.cache/neural-style` (needs `pip install -e ".[caffe]"`).
-
-More options:
+The first `--weights caffe` run downloads 80 MB into `~/.cache/neural-style`. Without
+`--weights`, torchvision's weights are used (a 550 MB download from download.pytorch.org).
 
 ```bash
-# blend two styles 70/30 and keep the photo's colours
-python -m neural_style photo.jpg starry.jpg scream.jpg --blend 0.7 0.3 --color luminance
+# spatial control: Starry Night in the sky, The Scream below (white = where a style applies)
+neural-style photo.jpg starry.jpg scream.jpg --masks sky.png ground.png --weights caffe
 
-# higher resolution on a GPU, smoother result, save a frame every 50 steps
-python -m neural_style photo.jpg painting.jpg --size 768 --tv-weight 1e-4 --save-every 50
+# keep the photo's colours: luminance-only transfer, or recolour the painting first
+neural-style photo.jpg starry.jpg --color luminance --weights caffe
+neural-style photo.jpg starry.jpg --color match --weights caffe
 
-# Adam instead of L-BFGS (lower memory)
-python -m neural_style photo.jpg painting.jpg --optimizer adam --lr 0.02 --steps 1000
+# coarse-to-fine: 300 steps at 256 px, then 100 at 512 px
+neural-style photo.jpg starry.jpg --size 256 512 --steps 300 100 --weights caffe
+
+# blend two styles, smaller brush strokes, Adam instead of L-BFGS
+neural-style photo.jpg starry.jpg scream.jpg --blend 0.7 0.3 --style-scale 0.5 --optimizer adam --lr 0.02
 ```
 
-As a library:
+`neural-style --help` lists every option.
+
+## Gallery
+
+![Three photos in four styles](docs/gallery/styles.jpg)
+<sub>Chelsea the cat, a coffee cup and a rocket launch in the styles of Van Gogh, Munch, Turner and
+Matisse: 256 px, 200 L-BFGS steps each, Caffe VGG-19, default settings.</sub>
+
+The [gallery](docs/gallery/README.md) also shows spatial control, both colour-preservation
+methods, coarse-to-fine synthesis, a style-weight × layer grid and L-BFGS vs Adam convergence
+curves, each with the command that made it.
+
+## How it works
+
+For a layer $l$ with feature maps $F_l \in \mathbb{R}^{N_l \times M_l}$ ($N_l$ channels, $M_l$
+positions), style is summarised by the Gram matrix $\hat G_l = F_l F_l^\top / (N_l M_l)$: which
+features occur *together*, regardless of *where*. The synthesised image $x$ minimises
+
+$$
+\mathcal{L}(x) = \alpha \sum_{l \in C} \operatorname{mean}\Big[\big(F_l(x) - F_l(c)\big)^2\Big]
+             + \beta \sum_{l \in S} \operatorname{mean}\Big[\Big(\hat G_l(x) - \sum_k w_k\, \hat G_l(s_k)\Big)^2\Big]
+             + \gamma\, \mathrm{TV}(x)
+$$
+
+over its pixels, with the network frozen; the means run over all entries, and $w_k$ blend several
+style images. [`docs/method.md`](docs/method.md)
+explains the choices (why Gram matrices, why VGG-19, why L-BFGS), how the normalisation relates
+to the papers, the colour, spatial and scale extensions, and every deviation from the papers.
+
+```mermaid
+flowchart LR
+    X["image x<br/>(the parameters)"] --> V["VGG-19, frozen"]
+    C[content photo] --> V
+    S[style painting] --> V
+    V -->|relu4_2| CL["content loss<br/>feature MSE"]
+    V -->|relu1_1 … relu5_1| SL["style loss<br/>Gram-matrix MSE"]
+    CL --> L((α·content + β·style))
+    SL --> L
+    L -->|gradient w.r.t. pixels| X
+```
+
+## Pretrained weights
+
+| `--weights` | Source | Input convention | Default layers |
+|---|---|---|---|
+| `torchvision` (default) | torchvision's ImageNet VGG-19, via download.pytorch.org | RGB, ImageNet mean / std | v0.1: `conv2_2`; `conv1_1`…`conv3_1` |
+| `caffe` | Simonyan & Zisserman's Caffe release, Keras conversion on GitHub (80 MB) | BGR, 0–255, mean pixel subtracted | paper: `relu4_2`; `relu1_1`…`relu5_1` |
+| `random` | untrained, seeded | — | as torchvision; for smoke tests |
+
+If the torchvision weights cannot be downloaded, the command says so and suggests `--weights caffe`.
+The gallery uses the Caffe weights throughout.
+
+## Performance
+
+Measured on a shared 4-vCPU cloud VM (Intel Xeon, 2.8 GHz) with two torch threads while other jobs
+were running, so the numbers are indicative; each is recorded with its load average in
+[`docs/gallery/`](docs/gallery/) and reproduced by `python scripts/gallery.py speed multiscale`.
+
+| Output size | 128 × 192 | 192 × 288 | 256 × 384 | 384 × 576 | 512 × 767 |
+|---|---|---|---|---|---|
+| Seconds per L-BFGS step (median of 10, load 2.3–2.7) | 0.25 | 0.59 | 0.95 | 2.4 | 4.3 |
+
+Coarse-to-fine synthesis pays off at larger sizes. At 384 × 576, 200 steps at 192 px plus 50 at
+384 px took **238 s**, against 547 s for 200 single-scale steps (load 2.5–3.5). For the same time,
+it ends with a 26 % lower loss than single-scale synthesis
+([details](docs/method.md#10-scale-control)). No GPU was available, so there are no GPU timings.
+
+## As a library
 
 ```python
-import torch
 from neural_style import TransferConfig, load_image, load_vgg19, save_image, stylize
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-content = load_image("photo.jpg", 512, device)  # shorter edge 512 px
-style = load_image("painting.jpg", None, device)  # any size and aspect ratio
+vgg = load_vgg19("caffe")  # or "torchvision"
+content = load_image("photo.jpg", 256)  # shorter edge 256 px
+style = load_image("painting.jpg")  # any size and aspect ratio
 
-result = stylize(load_vgg19("torchvision").to(device), content, [style], TransferConfig(steps=300))
-save_image(result.image, "out.jpg")  # result.history holds the loss of every step
+result = stylize(vgg, content, [style], TransferConfig(steps=200, color="luminance"))
+save_image(result.image, "out.jpg")
+print(result.history[-1])  # loss terms of the last step
 ```
 
-## Tuning notes
+`stylize_multiscale`, masks (`masks=[...]`), `Objective` (the loss on its own) and the colour
+helpers are documented in their docstrings.
 
-| Knob | Effect |
-|------|--------|
-| `--style-weight` | Higher = stronger brush-strokes, less recognisable content. 1e5–1e7 is the useful range. |
-| `--init content` | Starts from the photo: converges faster and keeps structure. `noise` gives wilder results. |
-| `--tv-weight` | 1e-5–1e-3 removes speckle; too high looks blurry. |
-| `--size` | Style features are scale-dependent: the same painting gives finer strokes at higher resolution. |
-
-## Tests
+## Development
 
 ```bash
-pip install -e ".[dev]"
-pytest -q
+pip install -e ".[dev,caffe,plots]"
+ruff check . && ruff format --check . && mypy && pytest -q
 ```
 
-The tests use a randomly initialised VGG-19, so they run offline in seconds. They check the
-Gram-matrix definition and its translation invariance, style blending, model truncation,
-that optimisation reduces the loss for both optimisers, colour preservation, and image I/O.
+The 103 tests run offline on a random VGG-19 and a tiny synthetic weight file, in 20–45 s on the
+4-vCPU VM (depending on what else is running).
+They check the maths (Gram and guided Gram matrices, mask downsampling, colour transforms, with
+property-based tests), the weight converter against a direct NumPy cross-correlation, the
+download cache's hash checks, and the optimisation and CLI end to end. `scripts/gallery.py`
+regenerates the gallery.
 
-## Repository layout
+## Where it started
 
-```
-neural_style/   layers.py · model.py · losses.py · color.py · image.py · transfer.py · cli.py
-tests/          fast offline tests
-notebooks/      original 2019 notebooks: the PyTorch experiment, and a TensorFlow version
-                written while following the deeplearning.ai CNN course exercise
-docs/           README images
-```
+This began in 2019 as a university project laboratory at AUT: the notebooks in
+[`notebooks/`](notebooks/) are the original PyTorch experiment (a Colab notebook built on the
+official PyTorch tutorial) and a TensorFlow version written while following the deeplearning.ai
+CNN course. They are kept unchanged, with their original outputs. Their input images came from
+image-hosting links whose authors and licences were never recorded, so none of them is reused
+here; everything above is generated from public-domain and CC0 inputs.
 
 ## Acknowledgements
 
-Implementation follows the paper above and the structure of the official
-[PyTorch neural-transfer tutorial](https://pytorch.org/tutorials/advanced/neural_style_tutorial.html);
-colour preservation follows Gatys et al., *Preserving Color in Neural Artistic Style Transfer* (2016).
+The method is that of Leon Gatys, Alexander Ecker, Matthias Bethge, Aaron Hertzmann and Eli
+Shechtman (references in [`docs/method.md`](docs/method.md)). The VGG-19 weights are by Karen
+Simonyan and Andrew Zisserman, released under CC BY 4.0, in François Chollet's Keras conversion.
+Example images: see [credits](docs/gallery/CREDITS.md).
 
 ## License
 
-MIT
+MIT, for the code and the generated images; the inputs keep their own (public-domain / CC0)
+status.
